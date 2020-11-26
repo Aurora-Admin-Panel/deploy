@@ -1,0 +1,57 @@
+version: '3.7'
+services:
+  worker:
+    image: leishi1313/aurora-admin-backend:latest
+    restart: always
+    command: celery -A app.tasks worker --loglevel=INFO -Q main-queue -c 5
+    environment:
+      DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+    volumes:
+      - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
+    depends_on:
+      - redis
+
+  beat:
+    image: leishi1313/aurora-admin-backend:latest
+    restart: always
+    command: celery -A app.tasks beat --loglevel=INFO
+    environment:
+      DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+    depends_on:
+      - redis
+
+  backend:
+    image: leishi1313/aurora-admin-backend:latest
+    command: python app/main.py
+    environment:
+      PYTHONPATH: .
+      DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+      ENABLE_SENTRY: 'yes'
+      SECREY_KEY: 'AuroraAdminPanel321'
+    depends_on:
+      - postgres
+      - redis
+
+  nginx:
+    image: leishi1313/aurora-admin-frontend:latest
+    ports:
+      - 8000:80
+    depends_on:
+      - backend
+  
+  redis:
+    image: redis
+    restart: always
+
+  postgres:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: aurora
+      POSTGRES_PASSWORD: AuroraAdminPanel321
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      
+  
+volumes:
+  db-data:
