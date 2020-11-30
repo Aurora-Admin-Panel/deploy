@@ -77,6 +77,18 @@ sudo systemctl enable docker
 docker-compose pull && docker-compose down && docker-compose up -d && docker-compose run --rm backend alembic upgrade heads
 ```
 
+## 数据库备份与恢复
+
+### 备份
+```shell
+docker-compose exec postgres pg_dump -U aurora -a > data.sql
+```
+
+### 恢复
+```shell
+docker-compose exec -T postgres psql -d aurora -U aurora < data.sql
+```
+
 ## 面板长什么样？
 
 ### 服务器管理页面
