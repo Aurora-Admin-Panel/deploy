@@ -24,7 +24,7 @@ services:
 
   backend:
     image: leishi1313/aurora-admin-backend:latest
-    command: python app/main.py
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; alembic upgrade heads && python app/main.py"
     environment:
       PYTHONPATH: .
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
