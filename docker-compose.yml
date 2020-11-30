@@ -5,6 +5,7 @@ services:
     restart: always
     command: celery -A app.tasks worker --loglevel=INFO -Q main-queue -c 5
     environment:
+      ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
     volumes:
       - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
@@ -16,6 +17,7 @@ services:
     restart: always
     command: celery -A app.tasks beat --loglevel=INFO
     environment:
+      ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
     depends_on:
       - redis
