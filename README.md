@@ -49,9 +49,11 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
 然后还需要将`~/.ssh/id_rsa.pub`里面的内容复制到被控机的`~/.ssh/authorized_keys`
 
-### 启动面板
+### 安装/启动面板
 
 ```shell
+git clone https://github.com/Aurora-Admin-Panel/deploy.git
+cd deply
 docker-compose up -d
 # 更新数据库
 docker-compose run --rm backend alembic upgrade heads
