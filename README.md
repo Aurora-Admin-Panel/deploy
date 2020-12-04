@@ -53,7 +53,7 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
 ```shell
 git clone https://github.com/Aurora-Admin-Panel/deploy.git
-cd deply
+cd deploy
 docker-compose up -d
 # 更新数据库
 docker-compose run --rm backend alembic upgrade heads
