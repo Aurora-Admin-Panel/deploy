@@ -7,8 +7,8 @@ services:
     environment:
       ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
-      TRAFFIC_INTERVAL: 10
-      DDNS_INTERVAL: 2
+      TRAFFIC_INTERVAL: 600
+      DDNS_INTERVAL: 120
     volumes:
       - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
     depends_on:
