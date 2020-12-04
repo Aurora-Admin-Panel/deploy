@@ -43,6 +43,7 @@ services:
     environment:
       POSTGRES_USER: aurora
       POSTGRES_PASSWORD: AuroraAdminPanel321
+      POSTGRES_DB: aurora
     volumes:
       - db-data:/var/lib/postgresql/data
       
