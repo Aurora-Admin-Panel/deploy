@@ -1,0 +1,52 @@
+version: '3.7'
+services:
+  worker:
+    image: leishi1313/aurora-admin-backend:dev-latest
+    restart: always
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; celery -A tasks worker -B --loglevel=INFO -Q main-queue -c 5"
+    environment:
+      ENABLE_SENTRY: 'yes'
+      DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+      TRAFFIC_INTERVAL_SECONDS: 600
+      DDNS_INTERVAL_SECONDS: 120
+    volumes:
+      - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
+    depends_on:
+      - redis
+
+  backend:
+    image: leishi1313/aurora-admin-backend:dev-latest
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; alembic upgrade heads && python app/main.py"
+    environment:
+      PYTHONPATH: .
+      DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+      ENABLE_SENTRY: 'yes'
+      SECREY_KEY: 'AuroraAdminPanel321'
+    depends_on:
+      - postgres
+      - redis
+
+  nginx:
+    image: leishi1313/aurora-admin-frontend:dev-latest
+    ports:
+      - 8000:80
+    depends_on:
+      - backend
+  
+  redis:
+    image: redis
+    restart: always
+
+  postgres:
+    image: postgres:13-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: aurora
+      POSTGRES_PASSWORD: AuroraAdminPanel321
+      POSTGRES_DB: aurora
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      
+  
+volumes:
+  db-data:

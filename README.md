@@ -75,20 +75,30 @@ sudo systemctl enable docker
 
 ## 更新
 
+### 正式版
 ```shell
-docker-compose pull && docker-compose down && docker-compose up -d && docker-compose run --rm backend alembic upgrade heads
+git reset --hard HEAD
+git pull origin main
+docker-compose pull && docker-compose down && docker-compose up -d && docker-compose exec backend alembic upgrade heads
+```
+
+### 测试版
+```shell
+git reset --hard HEAD
+git pull origin main
+docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compose-dev.yml down && docker-compose -f docker-compose-dev.yml up -d && docker-compose -f docker-compose-dev.yml exec backend alembic upgrade heads
 ```
 
 ## 数据库备份与恢复
 
 ### 备份
 ```shell
-docker-compose exec postgres pg_dump -U aurora -a > data.sql
+docker-compose exec postgres pg_dump -U [数据库用户名，默认aurora] -a > data.sql
 ```
 
 ### 恢复
 ```shell
-docker-compose exec -T postgres psql -d aurora -U aurora < data.sql
+docker-compose exec -T postgres psql -d aurora -U [数据库用户名，默认aurora] < data.sql
 ```
 
 ## 面板长什么样？
