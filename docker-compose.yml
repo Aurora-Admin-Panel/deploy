@@ -3,12 +3,12 @@ services:
   worker:
     image: leishi1313/aurora-admin-backend:latest
     restart: always
-    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; celery -A app.tasks worker -B --loglevel=INFO -Q main-queue -c 5"
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; celery -A tasks worker -B --loglevel=INFO -Q main-queue -c 5"
     environment:
       ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
-      TRAFFIC_INTERVAL: 600
-      DDNS_INTERVAL: 120
+      TRAFFIC_INTERVAL_SECONDS: 600
+      DDNS_INTERVAL_SECONDS: 120
     volumes:
       - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
     depends_on:
