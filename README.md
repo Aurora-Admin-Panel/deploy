@@ -12,7 +12,7 @@
 本面板无需被控，只需要安装面板的服务器能够通过 ssh 连接被控机即可，但是被控机需使用 systemd，且 iptables 功能只支持安装了 iptables 的服务器，gost 只支持 linux x86 系统。
 暂时只在 CentOS 7+，Debian 9+，Ubuntu 18+上测试通过。
 
-## 怎么跑起来？
+## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
 
 ### 安装 docker
 
