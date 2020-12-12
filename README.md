@@ -10,6 +10,7 @@
 - [ehco](https://github.com/Ehco1996/ehco)
 - [brook](https://github.com/txthinking/brook)
 - [wstunnel](https://github.com/erebe/wstunnel)
+- [shadowsocks](https://github.com/shadowsocks)
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter)
 
