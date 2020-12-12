@@ -4,8 +4,14 @@
 
 这是一个多服务器端口租用管理面板，你可以添加多台服务器及端口，并将其分配给任意注册用户，租户则可以很方便地使用被分配的端口来完成各种操作，目前支持的端口功能：
 
-- iptables 转发端口
-- gost 加密隧道
+- iptables
+- [socat](http://www.dest-unreach.org/socat/)
+- [gost](https://github.com/ginuerzh/gost)
+- [ehco](https://github.com/Ehco1996/ehco)
+- [brook](https://github.com/txthinking/brook)
+- [wstunnel](https://github.com/erebe/wstunnel)
+- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
+- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter)
 
 ### 限制
 
