@@ -63,8 +63,10 @@ git clone https://github.com/Aurora-Admin-Panel/deploy.git
 cd deploy
 docker-compose up -d
 # 创建管理员用户
-docker-compose run --rm backend python app/initial_data.py
+docker-compose exec backend python app/initial_data.py
 ```
+之后可以访问`http://你的IP:8000`进入面板
+
 
 #### 设置机器自动重启面板
 
