@@ -11,6 +11,7 @@ services:
       DDNS_INTERVAL_SECONDS: 120
     volumes:
       - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
+      - app-data:/app/ansible/priv_data_dirs
     depends_on:
       - redis
 
@@ -22,6 +23,8 @@ services:
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
       ENABLE_SENTRY: 'yes'
       SECREY_KEY: 'AuroraAdminPanel321'
+    volumes:
+      - app-data:/app/ansible/priv_data_dirs
     depends_on:
       - postgres
       - redis
@@ -50,3 +53,4 @@ services:
   
 volumes:
   db-data:
+  app-data:
