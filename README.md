@@ -84,14 +84,12 @@ sudo systemctl enable docker
 
 ### 正式版
 ```shell
-git reset --hard HEAD
 git pull origin main
 docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && docker-compose exec backend alembic upgrade heads
 ```
 
 ### 测试版
 ```shell
-git reset --hard HEAD
 git pull origin main
 docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compose-dev.yml down --remove-orphans && docker-compose -f docker-compose-dev.yml up -d && docker-compose -f docker-compose-dev.yml exec backend alembic upgrade heads
 ```
