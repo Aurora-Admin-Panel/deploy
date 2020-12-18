@@ -26,6 +26,8 @@
 ```shell
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
+# 启动并设置开机自启docker
+systemctl enable --now docker
 ```
 
 #### 非 root 用户
