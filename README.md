@@ -8,6 +8,7 @@
 - [socat](http://www.dest-unreach.org/socat/)
 - [gost](https://github.com/ginuerzh/gost)
 - [ehco](https://github.com/Ehco1996/ehco)
+- [v2ray](https://github.com/v2ray/v2ray-core)
 - [brook](https://github.com/txthinking/brook)
 - [wstunnel](https://github.com/erebe/wstunnel)
 - [shadowsocks](https://github.com/shadowsocks)
