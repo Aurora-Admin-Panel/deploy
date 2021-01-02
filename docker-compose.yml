@@ -17,6 +17,7 @@ services:
 
   backend:
     image: leishi1313/aurora-admin-backend:latest
+    restart: always
     command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; alembic upgrade heads && python app/main.py"
     environment:
       PYTHONPATH: .
@@ -31,6 +32,7 @@ services:
 
   nginx:
     image: leishi1313/aurora-admin-frontend:latest
+    restart: always
     ports:
       - 8000:80
     depends_on:
