@@ -3,7 +3,7 @@ services:
   worker:
     image: leishi1313/aurora-admin-backend:dev-latest
     restart: always
-    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; celery -A tasks worker -B --loglevel=INFO -Ofair -Q main-queue -c 5"
+    command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; celery -A tasks worker -B --loglevel=INFO -Ofair -Q main-queue -c 2"
     environment:
       ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
