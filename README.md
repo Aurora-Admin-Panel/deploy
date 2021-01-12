@@ -102,12 +102,19 @@ docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compos
 
 ### 备份
 ```shell
-docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -a --exclude-table alembic_version > data.sql
+docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
 ```
 
 ### 恢复
 ```shell
+# 首先先把所有服务停下
+docker-compose down
+# 只启动数据库服务
+docker-compose up postgres
+# 在另外一个窗口，执行数据恢复
 docker-compose exec -T postgres psql -d aurora -U [数据库用户名，默认aurora] < data.sql
+# 然后正常启动所有服务
+docker-compose up -d
 ```
 
 ## 面板长什么样？
