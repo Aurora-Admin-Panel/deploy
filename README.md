@@ -102,7 +102,7 @@ docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compos
 
 ### 备份
 ```shell
-docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
+docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -a --exclude-table alembic_version > data.sql
 ```
 
 ### 恢复
