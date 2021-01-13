@@ -63,8 +63,9 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 ### 安装/启动面板
 
 ```shell
-git clone https://github.com/Aurora-Admin-Panel/deploy.git
-cd deploy
+mkdir -p aurora
+cd aurora
+wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
 docker-compose up -d
 # 创建管理员用户
 docker-compose exec backend python app/initial_data.py
@@ -88,14 +89,16 @@ sudo systemctl enable docker
 
 ### 正式版
 ```shell
-git pull origin main
-docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && docker-compose exec backend alembic upgrade heads
+cd aurora
+wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
+docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
 
 ### 测试版
 ```shell
-git pull origin main
-docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compose-dev.yml down --remove-orphans && docker-compose -f docker-compose-dev.yml up -d && docker-compose -f docker-compose-dev.yml exec backend alembic upgrade heads
+cd aurora
+wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose-dev.yml
+docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compose-dev.yml down --remove-orphans && docker-compose -f docker-compose-dev.yml up -d
 ```
 
 ## 数据库备份与恢复
@@ -115,6 +118,13 @@ docker-compose up postgres
 docker-compose exec -T postgres psql -d aurora -U [数据库用户名，默认aurora] < data.sql
 # 然后正常启动所有服务
 docker-compose up -d
+```
+
+## 卸载面板
+```shell
+docker-compose down
+docker volume rm aurora_db-data
+docker volume rm aurora_app-data
 ```
 
 ## 面板长什么样？
