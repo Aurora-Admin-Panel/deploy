@@ -65,6 +65,8 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 ```shell
 mkdir -p aurora
 cd aurora
+# 如果是测试版
+# wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
 docker-compose up -d
 # 创建管理员用户
@@ -97,8 +99,8 @@ docker-compose pull && docker-compose down --remove-orphans && docker-compose up
 ### 测试版
 ```shell
 cd aurora
-wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose-dev.yml
-docker-compose -f docker-compose-dev.yml pull && docker-compose -f docker-compose-dev.yml down --remove-orphans && docker-compose -f docker-compose-dev.yml up -d
+wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
+docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
 
 ## 数据库备份与恢复
