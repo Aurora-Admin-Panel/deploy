@@ -18,76 +18,98 @@
 
 ### 限制
 
-本面板无需被控，只需要安装面板的服务器能够通过 ssh 连接被控机即可，但是被控机需使用 systemd，且 iptables 功能只支持安装了 iptables 的服务器，gost 只支持 linux x86 系统。
-暂时只在 CentOS 7+，Debian 9+，Ubuntu 18+上测试通过。
+本面板无需单独配置被控机，只需保证安装面板的服务器能够通过 ssh 连接至被控机即可，**但被控机需确保已安装 systemd 和 python** ，且 iptables 功能（包括流量控制等依赖 iptables 的功能）需要被控端安装了 iptables ，gost 只支持 Linux X64 系统。
+
+#### 面板（主控机）支持进度：
+
+- 操作系统
+- [x] CentOS 7+
+- [x] Debian 8+
+- [x] Ubuntu 18+
+- 虚拟平台
+- [x] KVM
+- [x] VMware
+- [ ] OVZ （理论支持，未测试）
+- CPU 架构
+- [x] AMD64
+- [x] ARM64 （0.15.3+ 镜像版本支持）
+
+#### 中转机器（被控机）支持进度：
+
+- 操作系统
+- [x] CentOS 7+
+- [x] Debian 8+
+- [x] Ubuntu 18+
+- 虚拟平台
+- [x] KVM
+- [x] VMware
+- [x] OVZ
+- CPU 架构
+- [x] AMD64
+- [x] ARM64 （仅支持部分功能，如 iptables ）
 
 ## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
 
-### 安装 docker
+### 安装 docker（必须）
 
 ```shell
 curl -fsSL https://get.docker.com -o get-docker.sh
 sudo sh get-docker.sh
 # 启动并设置开机自启docker
 systemctl enable --now docker
-```
 
-#### 非 root 用户
-
-```
+# 如果当前执行安装命令的不是 root 用户，请执行下面部分
+# =================非root用户执行==================
 sudo groupadd docker
 sudo usermod -aG docker $USER
 newgrp docker
+# =================非root用户执行==================
 ```
 
-### 安装 docker-compose
+### 安装 docker-compose（必须）
 
 ```shell
-sudo curl -L "https://github.com/docker/compose/releases/download/1.27.4/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
 sudo chmod +x /usr/local/bin/docker-compose
-# 如果/usr/local/bin不在PATH里
+
+# 如果 /usr/local/bin 不在环境变量 PATH 里
+# ============================可选================================
 sudo ln -s /usr/local/bin/docker-compose /usr/bin/docker-compose
+# ============================可选================================
 ```
 
-### 生成 SSH 密钥
+### 生成 SSH 密钥（建议，非必须）
 
-如果面板机上没有 ssh key 的话
+此步操作目的为让面板服务器通过密钥连接被控机 ssh ，可以提高被控机安全性，非必须步骤，如果不采用密钥连接方式，后续在面板添加被控机使可以选择使用密码连接的方式。
 
 ```shell
+# 如果面板服务器并没有已经生成好的 ssh 密钥
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
-# 跳过设置passphase即可
+# 后面一直回车，跳过设置 passphase 即可
+# 然后还需要将面板服务器 ~/.ssh/id_rsa.pub 里面的内容复制到每一台被控机的 `~/.ssh/authorized_keys` 文件中去。
 ```
 
-然后还需要将`~/.ssh/id_rsa.pub`里面的内容复制到被控机的`~/.ssh/authorized_keys`
-
-### 安装/启动面板
+### 安装 / 启动面板（必须）
 
 ```shell
-mkdir -p aurora
-cd aurora
-# 如果是测试版
-# wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
+mkdir -p ~/aurora
+cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
+# 测试版采用以下链接的配置文件，正式版跳过
+# wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
 docker-compose up -d
-# 创建管理员用户
+# 创建管理员用户（密码必须设置8位以上，否则无法登陆）
 docker-compose exec backend python app/initial_data.py
 ```
-之后可以访问`http://你的IP:8000`进入面板
+之后可以访问 `http://你的IP:8000` 进入面板。
 
+## 配置说明
 
-#### 设置机器自动重启面板
+- 修改所有的 `POSTGRES_USER` 和 `POSTGRES_PASSWORD` ，以及相应的 `DATABASE_URL` ，虽然数据库不公开，但使用默认的数据库用户和密码并不安全！
+- 后端默认会发送错误信息到 Sentry，可能会导致信息泄漏，移除 `ENABLE_SENTRY: 'yes'` 就好。
+- 默认挂载 `~/.ssh/id_rsa` 作为连接服务器的密钥，如使用其他密钥或者不使用密钥可以删除配置文件中的 `- $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key` 。
 
-```shell
-sudo systemctl enable docker
-```
-
-## 配置
-
-- 修改所有的`POSTGRES_USER`和`POSTGRES_PASSWORD`，以及相应的`DATABASE_URL`，虽然数据库不公开，但使用默认的数据库用户和密码并不安全！
-- 后端默认会发送错误信息到 Sentry，可能会导致信息泄漏，移除`ENABLE_SENTRY: 'yes'`就好
-- 默认挂载`~/.ssh/id_rsa`作为连接服务器的密钥，如使用其他密钥或者不使用密钥可以删除`- $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key`
-
-## 更新
+## 面板更新
 
 ### 正式版
 ```shell
