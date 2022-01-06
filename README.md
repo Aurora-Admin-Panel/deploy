@@ -18,7 +18,7 @@
 
 ### 限制
 
-本面板无需单独配置被控机，只需保证安装面板的服务器能够通过 ssh 连接至被控机即可，**但被控机需确保已安装 systemd ~~和 python~~** ，~~且 iptables 功能（包括流量控制等依赖 iptables 的功能）需要被控端安装了 iptables ，gost 只支持 Linux X64 系统~~。
+本面板无需单独配置被控机，只需保证安装面板的服务器能够通过 ssh 连接至被控机即可。
 
 #### 面板（主控机）支持进度：
 
@@ -46,7 +46,7 @@
 - [x] OVZ
 - CPU 架构
 - [x] AMD64
-- [x] ARM64 （仅支持部分功能）
+- [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
 
 ## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
 
@@ -95,8 +95,6 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 mkdir -p ~/aurora
 cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
-# 测试版采用以下链接的配置文件，正式版跳过
-# wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
 docker-compose up -d
 # 创建管理员用户（密码必须设置8位以上，否则无法登陆）
 docker-compose exec backend python app/initial_data.py
@@ -115,14 +113,14 @@ docker-compose exec backend python app/initial_data.py
 
 ### 正式版
 ```shell
-cd aurora
+cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
 docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
 
-### 内测版
+### ~~内测版（目前已不维护，请不要使用）~~
 ```shell
-cd aurora
+cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
 docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
@@ -139,8 +137,8 @@ docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认au
 # 首先先把所有服务停下
 docker-compose down
 # 只启动数据库服务
-docker-compose up postgres
-# 在另外一个窗口，执行数据恢复
+docker-compose up -d postgres
+# 执行数据恢复
 docker-compose exec -T postgres psql -d aurora -U [数据库用户名，默认aurora] < data.sql
 # 然后正常启动所有服务
 docker-compose up -d
