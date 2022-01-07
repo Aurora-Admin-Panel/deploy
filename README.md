@@ -16,9 +16,11 @@
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64 / ARM64 )
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 )
 
-### 限制
+### 面板服务器与被控机说明
 
-本面板无需单独配置被控机，只需保证安装面板的服务器能够通过 ssh 连接至被控机即可。
+**面板建议安装在单独的一台服务器上，建议安装配置为不低于单核 1G 内存的 VPS 中**，可以直接部署到本地。**被控机端无需做任何特别配置，只需保证面板服务器能够通过 ssh 连接至被控机即可。**
+
+面板服务器在连接被控机的时候会检测被控机是否已经安装好 python （python 为被控机必须依赖），如果被控机上没安装会自动在被控机上通过 apt / yum 执行 python 安装（优先安装python3），如果被控机没有自带 python 且自动安装失败会导致面板显示被控机连接失败（表现为被控机连接状态持续转圈）。从 0.16.5 版本开始，会加入对被控机 iptables 和 systemd 依赖的检测安装，以保证转发、流量统计等必需功能正常运行。
 
 #### 面板（主控机）支持进度：
 
