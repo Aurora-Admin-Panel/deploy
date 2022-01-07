@@ -52,6 +52,14 @@
 
 ## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
 
+## 一键脚本（推荐使用）
+
+```shell
+bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
+```
+
+## 手动安装
+
 ### 1. 安装 docker（必须）
 
 ```shell
@@ -68,7 +76,7 @@ newgrp docker
 ### 2. 安装 docker-compose（必须）
 
 ```shell
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
 
 # 如果 /usr/local/bin 不在环境变量 PATH 里
 # ============================可选================================
