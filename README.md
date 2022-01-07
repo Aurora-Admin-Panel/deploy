@@ -31,7 +31,7 @@
 - 虚拟平台
 - [x] KVM
 - [x] VMware
-- [ ] OVZ （理论支持，未测试）
+- [x] OVZ （需要 OVZ 支持 docker）
 - CPU 架构
 - [x] AMD64
 - [x] ARM64 （0.15.3+ 镜像版本支持）
@@ -55,10 +55,7 @@
 ### 1. 安装 docker（必须）
 
 ```shell
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-# 启动并设置开机自启docker
-systemctl enable --now docker
+curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun && sudo systemctl enable --now docker
 
 # 如果当前执行安装命令的不是 root 用户，请执行下面部分
 # =================非root用户执行==================
@@ -71,8 +68,7 @@ newgrp docker
 ### 2. 安装 docker-compose（必须）
 
 ```shell
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
 
 # 如果 /usr/local/bin 不在环境变量 PATH 里
 # ============================可选================================
@@ -91,13 +87,10 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 # 然后还需要将面板服务器 ~/.ssh/id_rsa.pub 里面的内容复制到每一台被控机的 ~/.ssh/authorized_keys 文件中去。
 ```
 
-### 4. 安装 / 启动面板（必须）
+### 4. 安装并启动面板（必须）
 
 ```shell
-mkdir -p ~/aurora
-cd ~/aurora
-wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
-docker-compose up -d
+mkdir -p ~/aurora && cd ~/aurora && wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml && docker-compose up -d
 # 创建管理员用户（密码必须设置8位以上，否则无法登陆）
 docker-compose exec backend python app/initial_data.py
 ```
