@@ -54,7 +54,7 @@ function install_all() {
 
 function install() {
     install_all
-    [[ -n $(docker ps | grep aurora_) ]] && echo -e "${Tip} 极光面板已经安装，且正在运行！" && exit 0
+    [[ -n $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板已经安装，且正在运行！" && exit 0
     [ -d "$HOME/aurora" ] || mkdir -p "$HOME/aurora"
     cd "$HOME/aurora" && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
     docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
@@ -76,26 +76,26 @@ function update() {
 function uninstall() {
     [ -f "$HOME/aurora/docker-compose.yml" ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
     cd "$HOME/aurora"
-    [[ -n $(docker ps | grep aurora_) ]] && docker-compose down
+    [[ -n $(docker ps | grep aurora) ]] && docker-compose down
     docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
     (rm -rf "$HOME/aurora" && echo -e "${Info} 卸载成功！" && exit 0) || (echo -e "${Error} 卸载失败！" && exit 1)
 }
 
 function start() {
     check_install
-    [[ -n $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
+    [[ -n $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
     cd "$HOME/aurora" && docker-compose up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
 }
 
 function stop() {
     check_install
-    [[ -z $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板未在运行！" && exit 0
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板未在运行！" && exit 0
     cd "$HOME/aurora" && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install
-    [[ -z $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板未在运行，请直接启动！" && exit 0
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板未在运行，请直接启动！" && exit 0
     cd "$HOME/aurora" && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
 
