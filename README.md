@@ -50,15 +50,19 @@
 - [x] AMD64
 - [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
 
-## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
+## 怎么跑起来？
 
-## 一键脚本（推荐使用）
+## 一键脚本（推荐）
+
+目前已支持一键安装、更新、卸载面板以及启动、停止、重启面板操作。
 
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
 ```
 
 ## 手动安装
+
+如果一键脚本提示不支持当前系统版本时，可以尝试使用手动安装的方式。
 
 ### 1. 安装 docker（必须）
 
