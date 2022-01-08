@@ -66,7 +66,7 @@ function check_install() {
 }
 
 function update() {
-    check_install
+    check_install || exit 1
     install_all
     cd "$HOME/aurora" && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
     docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
@@ -82,19 +82,19 @@ function uninstall() {
 }
 
 function start() {
-    check_install
+    check_install || exit 1
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
     cd "$HOME/aurora" && docker-compose up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
 }
 
 function stop() {
-    check_install
+    check_install || exit 1
     [[ -z $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板未在运行！" && exit 0
     cd "$HOME/aurora" && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
-    check_install
+    check_install || exit 1
     [[ -z $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板未在运行，请直接启动！" && exit 0
     cd "$HOME/aurora" && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
