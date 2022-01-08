@@ -11,6 +11,8 @@ function check_root() {
 
 function check_system() {
     source '/etc/os-release'
+    ARCH=$(uname -m)
+    [[ $ARCH == "x86_64" || $ARCH == "aarch64" ]] || (echo -e "${Error} 极光面板仅支持安装在 X64 或 ARM64 架构的机器上！" && exit 1)
     if [ $ID = "centos" ]; then
         OS_FAMILY="centos"
         UPDATE="yum makecache -q -y"
@@ -20,18 +22,17 @@ function check_system() {
         UPDATE="apt update -qq -y"
         INSTALL="apt install -qq -y"
     else
-        echo -e "${Error} 系统 $ID ${VERSION_ID} 暂不支持一键脚本，请尝试手动安装！"
-        exit 1
+        echo -e "${Error} 系统 $ID $VERSION_ID 暂不支持一键脚本，请尝试手动安装！" && exit 1
     fi
 }
 
 function install_software() {
-    [[ -n $1 ]] && ($1 -V > /dev/null 2>&1 || (echo -e "开始安装依赖 $1 ..." && $INSTALL $1) || ($UPDATE && $INSTALL $1))
+    [[ -z $1 ]] || (type $1 > /dev/null 2>&1 || (echo -e "开始安装依赖 $1 ..." && $INSTALL $1) || ($UPDATE && $INSTALL $1))
 }
 
 function install_docker() {
     if ! type docker > /dev/null 2>&1; then
-        curl -fsSL https://get.docker.com | bash -s docker --mirror Aliyun
+        curl -fsSL "https://get.docker.com" | bash -s docker --mirror Aliyun
         systemctl enable --now docker
     fi
 }
@@ -53,61 +54,54 @@ function install_all() {
 
 function install() {
     install_all
+    STATUS=$(docker ps | grep aurora_)
+    if [[ -n $STATUS ]]; then
+        echo -e "${Tip} 极光面板已经安装，且正在运行！"
+        exit 0
+    fi
     # Download and start
-    mkdir -p $HOME/aurora && cd $HOME/aurora && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
+    [ -d "$HOME/aurora" ] || mkdir -p "$HOME/aurora"
+    cd "$HOME/aurora" && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
     docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
-    (echo -e "${Info} 安装成功！" && exit 0) || (echo -e "${Error} 安装失败！" && exit 1)
+    (echo -e "${Info} 极光面板安装成功，已启动！" && exit 0) || (echo -e "${Error} 极光面板安装失败！" && exit 1)
 }
 
 function check_install() {
-    [ ! -f $HOME/aurora/docker-compose.yml ] && echo -e "${Tip} 未检测到已经安装极光面板，请先安装！" && exit 1
+    [ -f "$HOME/aurora/docker-compose.yml" ] || (echo -e "${Tip} 未检测到已经安装极光面板，请先安装！" && exit 1)
 }
 
 function update() {
     check_install
     install_all
-    cd $HOME/aurora && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
+    cd "$HOME/aurora" && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
     docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
-    (echo -e "${Info} 更新成功！" && exit 0) || (echo -e "${Error} 更新失败！" && exit 1)
+    (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
 function uninstall() {
-    if [ ! -f $HOME/aurora/docker-compose.yml ]; then
-        echo -e "${Tip} 未检测到已经安装极光面板！"
-        exit 0
-    fi
-    cd $HOME/aurora && docker-compose down && docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
-    (rm -rf $HOME/aurora && echo -e "${Info} 卸载成功！" && exit 0) || (echo -e "${Error} 卸载失败！" && exit 1)
+    [ -f "$HOME/aurora/docker-compose.yml" ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
+    cd "$HOME/aurora"
+    [[ -n $(docker ps | grep aurora_) ]] && docker-compose down
+    docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
+    (rm -rf "$HOME/aurora" && echo -e "${Info} 卸载成功！" && exit 0) || (echo -e "${Error} 卸载失败！" && exit 1)
 }
 
 function start() {
     check_install
-    STATUS=$(docker ps | grep aurora_)
-    if [[ -n $STATUS ]]; then
-        echo -e "${Info} 极光面板正在运行"
-        exit 0
-    fi
-    cd $HOME/aurora && docker-compose up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
+    [[ -n $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
+    cd "$HOME/aurora" && docker-compose up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
 }
 
 function stop() {
     check_install
-    STATUS=$(docker ps | grep aurora_)
-    if [[ -z $STATUS ]]; then
-        echo -e "${Info} 极光面板未在运行！"
-        exit 0
-    fi
-    cd $HOME/aurora && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
+    [[ -z $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板未在运行！" && exit 0
+    cd "$HOME/aurora" && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install
-    STATUS=$(docker ps | grep aurora_)
-    if [[ -z $STATUS ]]; then
-        echo -e "${Info} 极光面板未在运行，请直接启动！"
-        exit 0
-    fi
-    cd $HOME/aurora && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
+    [[ -z $(docker ps | grep aurora_) ]] && echo -e "${Info} 极光面板未在运行，请直接启动！" && exit 0
+    cd "$HOME/aurora" && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
 
 function welcome_aurora() {
