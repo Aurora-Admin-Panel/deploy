@@ -54,12 +54,7 @@ function install_all() {
 
 function install() {
     install_all
-    STATUS=$(docker ps | grep aurora_)
-    if [[ -n $STATUS ]]; then
-        echo -e "${Tip} 极光面板已经安装，且正在运行！"
-        exit 0
-    fi
-    # Download and start
+    [[ -n $(docker ps | grep aurora_) ]] && echo -e "${Tip} 极光面板已经安装，且正在运行！" && exit 0
     [ -d "$HOME/aurora" ] || mkdir -p "$HOME/aurora"
     cd "$HOME/aurora" && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
     docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
