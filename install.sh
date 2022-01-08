@@ -95,8 +95,33 @@ function stop() {
 
 function restart() {
     check_install || exit 1
-    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板未在运行，请直接启动！" && exit 0
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板未在运行，请直接启动！" && exit 0
     cd "$HOME/aurora" && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
+}
+
+function backend_logs() {
+    check_install || exit 1
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板未在运行！" && exit 0
+    cd "$HOME/aurora" && docker-compose logs -f --tail="100" backend worker
+}
+
+function frontend_logs() {
+    check_install || exit 1
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板未在运行！" && exit 0
+    cd "$HOME/aurora" && docker-compose logs -f --tail="100" frontend
+}
+
+function all_logs() {
+    check_install || exit 1
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板未在运行！" && exit 0
+    cd "$HOME/aurora" && docker-compose logs -f --tail="100"
+}
+
+function export_logs() {
+    check_install || exit 1
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板未在运行！" && exit 0
+    cd "$HOME/aurora" && docker-compose logs > logs && \
+    echo -e "${Info} 日志导出成功：$HOME/aurora/logs" || echo -e "${Error} 日志导出失败！"
 }
 
 function welcome_aurora() {
@@ -105,15 +130,20 @@ function welcome_aurora() {
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
-    1. 安装 极光面板
-    2. 更新 极光面板
-    3. 卸载 极光面板
+    1.  安装 极光面板
+    2.  更新 极光面板
+    3.  卸载 极光面板
     ————————————
-    4. 启动 极光面板
-    5. 停止 极光面板
-    6. 重启 极光面板
+    4.  启动 极光面板
+    5.  停止 极光面板
+    6.  重启 极光面板
     ————————————
-    0. 退出脚本
+    7.  查看 后端实时日志
+    8.  查看 前端实时日志
+    9.  查看 全部实时日志
+    10. 导出 全部日志
+    ————————————
+    0.  退出脚本
     ————————————
     ${Font_color_suffix}"
     read -r -e -p " 请输入数字 [1-6]: " num && echo
@@ -135,6 +165,18 @@ function welcome_aurora() {
             ;;
         6)
             restart
+            ;;
+        7)
+            backend_logs
+            ;;
+        8)
+            frontend_logs
+            ;;
+        9)
+            all_logs
+            ;;
+        10)
+            export_logs
             ;;
         0)
             exit 0
