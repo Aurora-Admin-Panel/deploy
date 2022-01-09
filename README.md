@@ -67,7 +67,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/ma
 ### 1. 安装 docker（必须）
 
 ```shell
-curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun && sudo systemctl enable --now docker
+curl -fsSL https://get.docker.com | sudo bash -s docker && sudo systemctl enable --now docker
+# 国内机器安装可以选择使用阿里镜像
+# curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun && sudo systemctl enable --now docker
 
 # 如果当前执行安装命令的不是 root 用户，请执行下面部分
 # =================非root用户执行==================
