@@ -16,9 +16,11 @@
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64 / ARM64 )
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 )
 
-### 限制
+### 面板服务器与被控机说明
 
-本面板无需单独配置被控机，只需保证安装面板的服务器能够通过 ssh 连接至被控机即可，**但被控机需确保已安装 systemd ~~和 python~~** ，~~且 iptables 功能（包括流量控制等依赖 iptables 的功能）需要被控端安装了 iptables ，gost 只支持 Linux X64 系统~~。
+**面板建议安装在单独的一台服务器上，建议安装配置为不低于单核 1G 内存的 VPS 中**，可以直接部署到本地。**被控机端无需做任何特别配置，只需保证面板服务器能够通过 ssh 连接至被控机即可。**
+
+面板服务器在连接被控机的时候会检测被控机是否已经安装好 python （python 为被控机必须依赖），如果被控机上没安装会自动在被控机上通过 apt / yum 执行 python 安装（优先安装python3），如果被控机没有自带 python 且自动安装失败会导致面板显示被控机连接失败（表现为被控机连接状态持续转圈）。从 0.16.5 版本开始，会加入对被控机 iptables 和 systemd 依赖的检测安装，以保证转发、流量统计等必需功能正常运行。
 
 #### 面板（主控机）支持进度：
 
@@ -29,7 +31,7 @@
 - 虚拟平台
 - [x] KVM
 - [x] VMware
-- [ ] OVZ （理论支持，未测试）
+- [x] OVZ （需要 OVZ 支持 docker）
 - CPU 架构
 - [x] AMD64
 - [x] ARM64 （0.15.3+ 镜像版本支持）
@@ -46,17 +48,28 @@
 - [x] OVZ
 - CPU 架构
 - [x] AMD64
-- [x] ARM64 （仅支持部分功能）
+- [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
 
-## 怎么跑起来？&nbsp;👉<a href="#%E6%9B%B4%E6%96%B0">更新</a>
+## 怎么跑起来？
+
+## 一键脚本（推荐）
+
+目前已支持一键安装、更新、卸载、启动、停止、重启面板以及备份数据库、添加超级管理员帐号操作。
+
+```shell
+bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
+```
+
+## 手动安装
+
+如果一键脚本提示不支持当前系统版本时，可以尝试使用手动安装的方式。
 
 ### 1. 安装 docker（必须）
 
 ```shell
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-# 启动并设置开机自启docker
-systemctl enable --now docker
+curl -fsSL https://get.docker.com | sudo bash -s docker && sudo systemctl enable --now docker
+# 国内机器安装可以选择使用阿里镜像
+# curl -fsSL https://get.docker.com | sudo bash -s docker --mirror Aliyun && sudo systemctl enable --now docker
 
 # 如果当前执行安装命令的不是 root 用户，请执行下面部分
 # =================非root用户执行==================
@@ -69,8 +82,7 @@ newgrp docker
 ### 2. 安装 docker-compose（必须）
 
 ```shell
-sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-sudo chmod +x /usr/local/bin/docker-compose
+sudo curl -L "https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose && sudo chmod +x /usr/local/bin/docker-compose
 
 # 如果 /usr/local/bin 不在环境变量 PATH 里
 # ============================可选================================
@@ -89,15 +101,10 @@ ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 # 然后还需要将面板服务器 ~/.ssh/id_rsa.pub 里面的内容复制到每一台被控机的 ~/.ssh/authorized_keys 文件中去。
 ```
 
-### 4. 安装 / 启动面板（必须）
+### 4. 安装并启动面板（必须）
 
 ```shell
-mkdir -p ~/aurora
-cd ~/aurora
-wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
-# 测试版采用以下链接的配置文件，正式版跳过
-# wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
-docker-compose up -d
+mkdir -p ~/aurora && cd ~/aurora && wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml && docker-compose up -d
 # 创建管理员用户（密码必须设置8位以上，否则无法登陆）
 docker-compose exec backend python app/initial_data.py
 ```
@@ -115,14 +122,14 @@ docker-compose exec backend python app/initial_data.py
 
 ### 正式版
 ```shell
-cd aurora
+cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml -O docker-compose.yml
 docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
 
-### 内测版
+### ~~内测版（目前已不维护，请不要使用）~~
 ```shell
-cd aurora
+cd ~/aurora
 wget https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose-dev.yml -O docker-compose.yml
 docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d
 ```
@@ -139,8 +146,8 @@ docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认au
 # 首先先把所有服务停下
 docker-compose down
 # 只启动数据库服务
-docker-compose up postgres
-# 在另外一个窗口，执行数据恢复
+docker-compose up -d postgres
+# 执行数据恢复
 docker-compose exec -T postgres psql -d aurora -U [数据库用户名，默认aurora] < data.sql
 # 然后正常启动所有服务
 docker-compose up -d
