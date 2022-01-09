@@ -54,7 +54,7 @@
 
 ## 一键脚本（推荐）
 
-目前已支持一键安装、更新、卸载面板以及启动、停止、重启面板操作。
+目前已支持一键安装、更新、卸载、启动、停止、重启面板以及备份数据库、添加超级管理员帐号操作。
 
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
