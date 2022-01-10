@@ -15,14 +15,18 @@ function check_system() {
     source '/etc/os-release'
     ARCH=$(uname -m)
     [[ $ARCH == "x86_64" || $ARCH == "aarch64" ]] || (echo -e "${Error} 极光面板仅支持安装在 X64 或 ARM64 架构的机器上！" && exit 1)
-    if [ $ID = "centos" ]; then
+    if [[ $ID = "centos" ]]; then
         OS_FAMILY="centos"
         UPDATE="yum makecache -q -y"
         INSTALL="yum install -q -y"
-    elif  [ $ID = "debian" ] || [ $ID = "ubuntu" ]; then
+    elif [[ $ID = "debian" || $ID = "ubuntu" ]]; then
         OS_FAMILY="debian"
         UPDATE="apt update -qq -y"
         INSTALL="apt install -qq -y"
+    elif [[ $ID = "alpine" ]]; then
+        OS_FAMILY="alpine"
+        UPDATE="apk update"
+        INSTALL="apk add"
     else
         echo -e "${Error} 系统 $ID $VERSION_ID 暂不支持一键脚本，请尝试手动安装！" && exit 1
     fi
@@ -33,14 +37,22 @@ function install_software() {
 }
 
 function install_docker() {
-    if ! type docker > /dev/null 2>&1; then
-        curl -fsSL "https://get.docker.com" | bash -s docker --mirror Aliyun
-        systemctl enable --now docker
+    if ! docker --version > /dev/null 2>&1; then
+        if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
+            curl -fsSL "https://get.docker.com" | bash -s docker --mirror Aliyun
+            systemctl enable --now docker && \
+            while ! systemctl is-active --quiet docker; do sleep 3; done
+        elif [[ $OS_FAMILY = "alpine" ]]; then
+            ($INSTALL docker || ($UPDATE && $INSTALL docker)) && \
+            rc-update add docker boot && \
+            service docker start && \
+            while [[ -z $(service docker status | grep started) ]]; do sleep 3; done
+        fi
     fi
 }
 
 function install_docker_compose() {
-    if ! type docker-compose > /dev/null 2>&1; then
+    if ! docker-compose --version > /dev/null 2>&1; then
         curl -fsSL "https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         chmod +x /usr/local/bin/docker-compose
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose

@@ -28,6 +28,7 @@
 - [x] CentOS 7+
 - [x] Debian 8+
 - [x] Ubuntu 18+
+- [x] Alpine Linux 3.15.0+ （请使用一键脚本安装）
 - 虚拟平台
 - [x] KVM
 - [x] VMware
