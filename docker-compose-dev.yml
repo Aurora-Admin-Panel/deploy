@@ -12,8 +12,6 @@ services:
     volumes:
       - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
       - app-data:/app/ansible/priv_data_dirs
-    depends_on:
-      - redis
 
   backend:
     image: leishi1313/aurora-admin-backend:dev-latest
@@ -28,7 +26,6 @@ services:
       - app-data:/app/ansible/priv_data_dirs
     depends_on:
       - postgres
-      - redis
 
   nginx:
     image: leishi1313/aurora-admin-frontend:dev-latest
@@ -37,10 +34,6 @@ services:
       - 8000:80
     depends_on:
       - backend
-  
-  redis:
-    image: redis
-    restart: always
 
   postgres:
     image: postgres:13-alpine
