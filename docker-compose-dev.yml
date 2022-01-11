@@ -35,6 +35,10 @@ services:
     depends_on:
       - backend
 
+  redis:
+    image: redis
+    restart: always
+
   postgres:
     image: postgres:13-alpine
     restart: always
