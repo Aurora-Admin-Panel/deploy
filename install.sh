@@ -15,14 +15,18 @@ function check_system() {
     source '/etc/os-release'
     ARCH=$(uname -m)
     [[ $ARCH == "x86_64" || $ARCH == "aarch64" ]] || (echo -e "${Error} 极光面板仅支持安装在 X64 或 ARM64 架构的机器上！" && exit 1)
-    if [ $ID = "centos" ]; then
+    if [[ $ID = "centos" ]]; then
         OS_FAMILY="centos"
         UPDATE="yum makecache -q -y"
         INSTALL="yum install -q -y"
-    elif  [ $ID = "debian" ] || [ $ID = "ubuntu" ]; then
+    elif [[ $ID = "debian" || $ID = "ubuntu" ]]; then
         OS_FAMILY="debian"
         UPDATE="apt update -qq -y"
         INSTALL="apt install -qq -y"
+    elif [[ $ID = "alpine" ]]; then
+        OS_FAMILY="alpine"
+        UPDATE="apk update"
+        INSTALL="apk add"
     else
         echo -e "${Error} 系统 $ID $VERSION_ID 暂不支持一键脚本，请尝试手动安装！" && exit 1
     fi
@@ -33,14 +37,22 @@ function install_software() {
 }
 
 function install_docker() {
-    if ! type docker > /dev/null 2>&1; then
-        curl -fsSL "https://get.docker.com" | bash -s docker --mirror Aliyun
-        systemctl enable --now docker
+    if ! docker --version > /dev/null 2>&1; then
+        if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
+            curl -fsSL "https://get.docker.com" | bash -s docker --mirror Aliyun
+            systemctl enable --now docker && \
+            while ! systemctl is-active --quiet docker; do sleep 3; done
+        elif [[ $OS_FAMILY = "alpine" ]]; then
+            ($INSTALL docker || ($UPDATE && $INSTALL docker)) && \
+            rc-update add docker boot && \
+            service docker start && \
+            while [[ -z $(service docker status | grep started) ]]; do sleep 3; done
+        fi
     fi
 }
 
 function install_docker_compose() {
-    if ! type docker-compose > /dev/null 2>&1; then
+    if ! docker-compose --version > /dev/null 2>&1; then
         curl -fsSL "https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
         chmod +x /usr/local/bin/docker-compose
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
@@ -54,23 +66,93 @@ function install_all() {
     install_docker_compose
 }
 
+function get_config() {
+    echo -e "${Info} 正在下载最新配置文件 ..."
+    wget -q "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O ${AURORA_PATH}/docker-compose.yml
+}
+
+function check_install() {
+    [ -f ${AURORA_PATH}/docker-compose.yml ] || (echo -e "${Tip} 未检测到已经安装极光面板，请先安装！" && exit 1)
+}
+
+function match_config() {
+    [[ -z $1 ]] || TEMP=$(cat ${AURORA_PATH}/docker-compose.yml | awk -v name="$1" '{ if ( $0 ~ name ){ print $2; } }' | head -n 1)
+    [[ -z $TEMP ]] && [[ -n $2 ]] && echo $2 || echo $TEMP
+}
+
+function read_config() {
+    ENABLE_SENTRY=$(match_config ENABLE_SENTRY 'yes')
+    echo -e "${Info} 开启错误跟踪: $ENABLE_SENTRY"
+    TRAFFIC_INTERVAL_SECONDS=$(match_config TRAFFIC_INTERVAL_SECONDS 600)
+    echo -e "${Info} 流量同步周期: $TRAFFIC_INTERVAL_SECONDS s"
+    DDNS_INTERVAL_SECONDS=$(match_config DDNS_INTERVAL_SECONDS 120)
+    echo -e "${Info} DDNS同步周期: $DDNS_INTERVAL_SECONDS s"
+}
+
+function set_config() {
+    # TODO
+    return 0
+}
+
+function read_port() {
+    PORT=$(grep -A 1 port ${AURORA_PATH}/docker-compose.yml | grep -Eo "[[:digit:]]+:" | grep -Eo "[[:digit:]]+")
+    [[ -z $PORT ]] && echo -e "${Error} 未检测到旧端口号，请检查配置文件是否正确！" && exit 1
+}
+
+function set_port() {
+    [[ -z $1 ]] && PORT=8000 || PORT=$1
+    NEW_PORT=$(echo $2 | grep -Eo "[[:digit:]]+")
+    [[ -z $NEW_PORT ]] && echo -e "${Error} 未检测到新端口号！" && exit 1
+    sed -i "s/- $PORT:80/- $NEW_PORT:80/" ${AURORA_PATH}/docker-compose.yml
+    return 0
+}
+
+function check_run() {
+    LEVEL=$1 && [[ -z $LEVEL || $LEVEL != ${Info} || $LEVEL != ${Tip} || $LEVEL != ${Error} ]] && LEVEL=${Tip}
+    TIPS=$2 && [[ -z $TIPS ]] && TIPS="极光面板未在运行！"
+    [[ -z $(docker ps | grep aurora) ]] && echo -e "${LEVEL} $TIPS"
+}
+
+
+function change_port() {
+    check_install || exit 1
+    check_run && exit 1
+    read_port
+    echo -e "${Info} 旧端口号: $PORT"
+    read -r -e -p "请输入新端口: " NEW_PORT
+    set_port $PORT $NEW_PORT
+    read_port
+    [[ $PORT = $NEW_PORT ]] && docker-compose up -d && \
+    echo -e "${Info} 端口修改成功！" || echo -e "${Error} 端口修改失败！"
+}
+
 function install() {
     install_all
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板已经安装，且正在运行！" && exit 0
     [ -d ${AURORA_PATH} ] || mkdir -p ${AURORA_PATH}
-    cd ${AURORA_PATH} && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
+    cd ${AURORA_PATH}
+    get_config
+    echo -e "${Info} 下载配置文件中 ..."
+    echo "-----------------------------------"
+    read_config
+    read_port
+    echo "-----------------------------------"
     docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
     (echo -e "${Info} 极光面板安装成功，已启动！" && exit 0) || (echo -e "${Error} 极光面板安装失败！" && exit 1)
 }
 
-function check_install() {
-    [ -f "$HOME/aurora/docker-compose.yml" ] || (echo -e "${Tip} 未检测到已经安装极光面板，请先安装！" && exit 1)
-}
-
 function update() {
-    check_install || exit 1
-    install_all
-    cd ${AURORA_PATH} && wget "https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/docker-compose.yml" -O docker-compose.yml
+    check_install && install_all || exit 1
+    cd ${AURORA_PATH}
+    echo -e "${Info} 同步旧配置文件中 ..."
+    echo "-----------------------------------"
+    read_config
+    read_port
+    echo "-----------------------------------"
+    get_config
+    #set_config
+    #set_port
+    echo -e "${Info} 同步新配置文件完成！"
     docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
@@ -83,12 +165,6 @@ function uninstall() {
     (rm -rf ${AURORA_PATH} && echo -e "${Info} 卸载成功！" && exit 0) || (echo -e "${Error} 卸载失败！" && exit 1)
 }
 
-function no_run_tip() {
-    LEVEL=$1 && [[ -z $LEVEL || $LEVEL != ${Info} || $LEVEL != ${Tip} || $LEVEL != ${Error} ]] && LEVEL=${Tip}
-    TIPS=$2 && [[ -z $TIPS ]] && TIPS="极光面板未在运行！"
-    [[ -z $(docker ps | grep aurora) ]] && echo -e "${LEVEL} $TIPS"
-}
-
 function start() {
     check_install || exit 1
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
@@ -97,37 +173,37 @@ function start() {
 
 function stop() {
     check_install || exit 1
-    no_run_tip ${Info} && exit 0
+    check_run ${Info} && exit 0
     cd ${AURORA_PATH} && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install || exit 1
-    no_run_tip ${Tip} "极光面板未在运行，请直接启动！" && exit 0
+    check_run ${Tip} "极光面板未在运行，请直接启动！" && exit 0
     cd ${AURORA_PATH} && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
 
 function backend_logs() {
     check_install || exit 1
-    no_run_tip && exit 1
+    check_run && exit 1
     cd ${AURORA_PATH} && docker-compose logs -f --tail="100" backend worker
 }
 
 function frontend_logs() {
     check_install || exit 1
-    no_run_tip && exit 1
+    check_run && exit 1
     cd ${AURORA_PATH} && docker-compose logs -f --tail="100" frontend
 }
 
 function all_logs() {
     check_install || exit 1
-    no_run_tip && exit 1
+    check_run && exit 1
     cd ${AURORA_PATH} && docker-compose logs -f --tail="100"
 }
 
 function export_logs() {
     check_install || exit 1
-    no_run_tip && exit 1
+    check_run && exit 1
     cd ${AURORA_PATH} && docker-compose logs > logs && \
     echo -e "${Info} 日志导出成功：${AURORA_PATH}/logs" || echo -e "${Error} 日志导出失败！"
 }
@@ -154,6 +230,14 @@ function add_superu() {
     cd ${AURORA_PATH} && docker-compose exec backend python app/initial_data.py
 }
 
+function set_traffic_interval() {
+    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+}
+
+function set_ddns_interval() {
+    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+}
+
 function welcome_aurora() {
     check_root
     check_system
@@ -176,11 +260,14 @@ function welcome_aurora() {
     11. 备份 数据库
     12. 还原 数据库
     13. 添加 管理员用户
+    14. 修改 面板访问端口（默认 8000）
+    15. 修改 面板流量同步间隔（默认 600s）
+    16. 修改 DDNS同步间隔（默认 120s）
     ————————————
     0.  退出脚本
     ————————————
     ${Font_color_suffix}"
-    read -r -e -p " 请输入数字 [1-13]: " num && echo
+    read -r -e -p " 请输入数字 [1-16]: " num && echo
     case "$num" in
         1)
             install
@@ -221,11 +308,20 @@ function welcome_aurora() {
         13)
             add_superu
             ;;
+        14)
+            change_port
+            ;;
+        15)
+            set_traffic_interval
+            ;;
+        16)
+            set_ddns_interval
+            ;;
         0)
             exit 0
             ;;
         *)
-            echo -e "${Error} 请输入正确数字 [1-13]"
+            echo -e "${Error} 请输入正确数字 [1-16]"
             ;;
     esac
 }

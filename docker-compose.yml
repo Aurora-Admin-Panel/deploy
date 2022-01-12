@@ -5,6 +5,7 @@ services:
     restart: always
     command: bash worker.sh
     environment:
+      TZ: 'Asia/Shanghai'
       ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
       TRAFFIC_INTERVAL_SECONDS: 600
@@ -20,6 +21,7 @@ services:
     restart: always
     command: bash -c "while !</dev/tcp/postgres/5432; do sleep 1; done; alembic upgrade heads && python app/main.py"
     environment:
+      TZ: 'Asia/Shanghai'
       PYTHONPATH: .
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
       ENABLE_SENTRY: 'yes'
@@ -33,26 +35,31 @@ services:
   nginx:
     image: leishi1313/aurora-admin-frontend:latest
     restart: always
+    environment:
+      TZ: 'Asia/Shanghai'
     ports:
       - 8000:80
     depends_on:
       - backend
-  
+
   redis:
     image: redis
     restart: always
+    environment:
+      TZ: 'Asia/Shanghai'
 
   postgres:
     image: postgres:13-alpine
     restart: always
     environment:
+      TZ: 'Asia/Shanghai'
       POSTGRES_USER: aurora
       POSTGRES_PASSWORD: AuroraAdminPanel321
       POSTGRES_DB: aurora
     volumes:
       - db-data:/var/lib/postgresql/data
-      
-  
+
+
 volumes:
   db-data:
   app-data:
