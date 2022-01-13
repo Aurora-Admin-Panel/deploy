@@ -253,11 +253,29 @@ function add_superu() {
 }
 
 function set_traffic_interval() {
-    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+    check_install || exit 1
+    check_run && exit 1
+    read_config
+    echo -e "${Info} 旧流量同步间隔: $TRAFFIC_INTERVAL_SECONDS s"
+    read -r -e -p "请输入新同步间隔: " NEW_TRAFFIC_INTERVAL_SECONDS
+    NEW_TRAFFIC_INTERVAL_SECONDS=$(echo $NEW_TRAFFIC_INTERVAL_SECONDS | grep -Eo "[[:digit:]]+")
+    [[ -z $NEW_TRAFFIC_INTERVAL_SECONDS ]] || sed -i "s/TRAFFIC_INTERVAL_SECONDS:.*$/TRAFFIC_INTERVAL_SECONDS: $NEW_TRAFFIC_INTERVAL_SECONDS/" ${AURORA_DOCKER_YML}
+    read_config
+    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SECONDS ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    echo -e "${Info} 流量同步间隔修改成功！" || echo -e "${Error} 流量同步间隔修改失败！"
 }
 
 function set_ddns_interval() {
-    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+    check_install || exit 1
+    check_run && exit 1
+    read_config
+    echo -e "${Info} 旧DDNS同步间隔: $DDNS_INTERVAL_SECONDS s"
+    read -r -e -p "请输入新同步间隔: " NEW_DDNS_INTERVAL_SECONDS
+    NEW_DDNS_INTERVAL_SECONDS=$(echo $NEW_DDNS_INTERVAL_SECONDS | grep -Eo "[[:digit:]]+")
+    [[ -z $NEW_DDNS_INTERVAL_SECONDS ]] || sed -i "s/DDNS_INTERVAL_SECONDS:.*$/DDNS_INTERVAL_SECONDS: $NEW_DDNS_INTERVAL_SECONDS/" ${AURORA_DOCKER_YML}
+    read_config
+    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SECONDS ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    echo -e "${Info} DDNS同步间隔修改成功！" || echo -e "${Error} DDNS同步间隔修改失败！"
 }
 
 function welcome_aurora() {
