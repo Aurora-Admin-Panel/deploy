@@ -134,7 +134,7 @@ function change_port() {
     read -r -e -p "请输入新端口: " NEW_PORT
     set_port $PORT $NEW_PORT
     read_port
-    [[ $PORT = $NEW_PORT ]] && docker-compose up -d && \
+    [[ $PORT = $NEW_PORT ]] && cd ${AURORA_HOME} && docker-compose up -d && \
     echo -e "${Info} 端口修改成功！" || echo -e "${Error} 端口修改失败！"
 }
 
