@@ -116,7 +116,6 @@ function set_port() {
     NEW_PORT=$(echo $2 | grep -Eo "[[:digit:]]+")
     [[ -z $NEW_PORT ]] && echo -e "${Error} 未检测到新端口号！" && exit 1
     sed -i "s/- $PORT:80/- $NEW_PORT:80/" ${AURORA_DOCKER_YML}
-    return 0
 }
 
 function check_run() {
@@ -172,7 +171,7 @@ function update() {
     echo "-----------------------------------"
     [[ $AURORA_VERSION = "DEV" ]] && get_dev_config || get_config
     set_config
-    set_port $PORT $PORT
+    set_port 8000 $PORT
     echo -e "${Info} 同步新配置文件完成！"
     docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
