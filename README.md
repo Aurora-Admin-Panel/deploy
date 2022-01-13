@@ -8,6 +8,7 @@
 - [socat](http://www.dest-unreach.org/socat/) ( AMD64 / ARM64 )
 - [gost](https://github.com/ginuerzh/gost) ( AMD64 / ARM64 )
 - [ehco](https://github.com/Ehco1996/ehco) ( AMD64 / ARM64 )
+- [realm](https://github.com/zhboner/realm) ( AMD64 )
 - [v2ray](https://github.com/v2ray/v2ray-core) ( AMD64 )
 - [brook](https://github.com/txthinking/brook) ( AMD64 / ARM64 )
 - [iperf](https://iperf.fr) ( AMD64 / ARM64 )
@@ -55,7 +56,7 @@
 
 ## 一键脚本（推荐）
 
-目前已支持一键安装、更新、卸载、启动、停止、重启面板以及备份数据库、添加超级管理员帐号操作。
+目前已支持一键安装、更新（自动同步旧配置）、卸载面板以及备份数据库、添加超级管理员帐号、更换面板端口等操作。
 
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
