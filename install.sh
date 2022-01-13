@@ -173,7 +173,9 @@ function update() {
     set_config
     set_port 8000 $PORT
     echo -e "${Info} 同步新配置文件完成！"
-    docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
+    docker-compose pull && docker-compose down --remove-orphans && \
+    docker image rm $(docker images | grep aurora | grep -v latest | awk '{ print $3; }') && \
+    docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
