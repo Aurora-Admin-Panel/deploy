@@ -214,6 +214,8 @@ function uninstall() {
     [ -f ${AURORA_DOCKER_YML} ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
     cd ${AURORA_HOME}
     [[ -n $(docker ps | grep aurora) ]] && docker-compose down
+    OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')
+    [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 镜像清理完成！")
     docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
     (rm -rf ${AURORA_HOME} && echo -e "${Info} 卸载成功！" && exit 0) || (echo -e "${Error} 卸载失败！" && exit 1)
 }
