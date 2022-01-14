@@ -61,9 +61,11 @@
 
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
+# 国内机器安装可以选择使用 fastgit 镜像
+# bash <(curl -fsSL https://raw.fastgit.org/Aurora-Admin-Panel/deploy/main/install.sh) --mirror
 ```
 
-一键脚本默认从 Github 拉取所需的配置文件，如果是在国内机器安装，请检查连接 Github 的网络是否正常。一键脚本也支持更新测试版本，只需要设置环境变量 `AURORA_VERSION` 再执行脚本即可，但是测试版本并不稳定，可能会出现各种问题，不建议在生产环境中使用。
+一键脚本默认从 Github 拉取所需的配置文件，如果是在国内机器安装，请检查连接 Github 的网络是否正常。一键脚本也支持更新测试版本，只需要添加 `--dev` 参数执行脚本即可，但是测试版本并不稳定，可能会出现各种问题，不建议在生产环境中使用。
 
 ## 手动安装
 

@@ -5,22 +5,36 @@ Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
 
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        --mirror)
+            FASTGIT="镜像加速"
+            shift
+            ;;
+        --dev)
+            AURORA_VERSION="DEV"
+            shift
+            ;;
+        *)
+            exit 1
+    esac
+done
+
+[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
+
 AURORA_HOME="$HOME/aurora"
 AURORA_DOCKER_YML=${AURORA_HOME}/docker-compose.yml
-GITHUB_URL="raw.githubusercontent.com"
+[[ -z $FASTGIT ]] && GITHUB_RAW_URL="raw.githubusercontent.com" || GITHUB_RAW_URL="raw.fastgit.org"
 AURORA_GITHUB="Aurora-Admin-Panel"
-AURORA_YML_URL="https://${GITHUB_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
-AURORA_DEV_YML_URL="https://${GITHUB_URL}/${AURORA_GITHUB}/deploy/main/docker-compose-dev.yml"
+AURORA_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
+AURORA_DEV_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose-dev.yml"
 DOCKER_INSTALL_URL="https://get.docker.com"
-DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
+[[ -z $FASTGIT ]] && GITHUB_URL="github.com" || GITHUB_URL="download.fastgit.org"
+DOCKER_COMPOSE_URL="https://${GITHUB_URL}/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
 
 AURORA_DEF_PORT=8000
 AURORA_DEF_TRAFF_MIN=10
 AURORA_DEF_DDNS_MIN=2
-
-function check_root() {
-    [[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
-}
 
 function check_system() {
     source '/etc/os-release'
@@ -298,13 +312,12 @@ function set_ddns_interval() {
 }
 
 function welcome_aurora() {
-    check_root
     check_system
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
-    1.  安装 极光面板
-    2.  更新 极光面板
+    1.  安装 极光面板 ${FASTGIT} ${AURORA_VERSION}
+    2.  更新 极光面板 ${FASTGIT} ${AURORA_VERSION}
     3.  卸载 极光面板
     ————————————
     4.  启动 极光面板
