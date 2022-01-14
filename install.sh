@@ -189,8 +189,9 @@ function update() {
     set_config
     set_port ${AURORA_DEF_PORT} $PORT
     echo -e "${Info} 同步新配置文件完成！"
-    docker-compose pull && docker-compose down --remove-orphans && \
-    docker image rm $(docker images | grep aurora | grep -v latest | awk '{ print $3; }') && \
+    docker-compose pull && docker-compose down --remove-orphans
+    OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
+    [[ -z $OLD_IMG_IDS ]] || docker image rm $OLD_IMG_IDS
     docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
