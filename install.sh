@@ -16,6 +16,7 @@ while [[ $# -ge 1 ]]; do
             shift
             ;;
         *)
+            echo -e "${Error} 请检查脚本输入的参数是否正确！"
             exit 1
     esac
 done
@@ -32,6 +33,7 @@ DOCKER_INSTALL_URL="https://get.docker.com"
 [[ -z $FASTGIT ]] && GITHUB_URL="github.com" || GITHUB_URL="download.fastgit.org"
 DOCKER_COMPOSE_URL="https://${GITHUB_URL}/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
 
+AURORA_DEF_IP=""
 AURORA_DEF_PORT=8000
 AURORA_DEF_TRAFF_MIN=10
 AURORA_DEF_DDNS_MIN=2
@@ -125,7 +127,9 @@ function set_config() {
 }
 
 function read_port() {
-    PORT=$(grep -A 1 port ${AURORA_DOCKER_YML} | grep -Eo "[[:digit:]]+:" | grep -Eo "[[:digit:]]+")
+    IP=$(grep -A 1 port ${AURORA_DOCKER_YML} | grep -Eo "((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)")
+    [[ -z $IP ]] && PORT=$(grep -A 1 port ${AURORA_DOCKER_YML} | grep -Eo "[[:digit:]]+:" | grep -Eo "[[:digit:]]+") || \
+    PORT=$(grep -A 1 port ${AURORA_DOCKER_YML} | grep -Eo ":[[:digit:]]+:" | grep -Eo "[[:digit:]]+")
     [[ -z $PORT ]] && echo -e "${Error} 未检测到旧端口号，请检查配置文件是否正确！" && exit 1
 }
 
@@ -133,7 +137,9 @@ function set_port() {
     [[ -z $1 ]] && PORT=${AURORA_DEF_PORT} || PORT=$1
     NEW_PORT=$(echo $2 | grep -Eo "[[:digit:]]+")
     [[ -z $NEW_PORT ]] && echo -e "${Error} 未检测到新端口号！" && exit 1
-    sed -i "s/- $PORT:80/- $NEW_PORT:80/" ${AURORA_DOCKER_YML}
+    [[ -z $IP ]] && sed -i "s/- $PORT:80/- $NEW_PORT:80/" ${AURORA_DOCKER_YML} || \
+    (sed -i "s/- $PORT:80/- $IP:$NEW_PORT:80/" ${AURORA_DOCKER_YML} && \
+    sed -i "s/- $IP:$PORT:80/- $IP:$NEW_PORT:80/" ${AURORA_DOCKER_YML})
 }
 
 function check_run() {
@@ -168,7 +174,8 @@ function min_to_sec() {
 }
 
 function echo_config() {
-    [[ -z $PORT ]] || echo -e "${Info} 面板端口号: $PORT"
+    [[ -z $IP ]] || echo -e "${Info} 面板监听地址: $IP"
+    [[ -z $PORT ]] || echo -e "${Info} 面板监听端口: $PORT"
     [[ -z $ENABLE_SENTRY ]] || echo -e "${Info} 开启错误跟踪: $ENABLE_SENTRY"
     [[ -z $TRAFFIC_INTERVAL_SECONDS ]] || echo -e "${Info} 流量同步周期: $(sec_to_min $TRAFFIC_INTERVAL_SECONDS) 分钟"
     [[ -z $DDNS_INTERVAL_SECONDS ]] || echo -e "${Info} DDNS同步周期: $(sec_to_min $DDNS_INTERVAL_SECONDS) 分钟"
