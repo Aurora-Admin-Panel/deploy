@@ -5,18 +5,36 @@ Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
 
+while [[ $# -ge 1 ]]; do
+    case $1 in
+        --mirror)
+            FASTGIT="镜像加速"
+            shift
+            ;;
+        --dev)
+            AURORA_VERSION="DEV"
+            shift
+            ;;
+        *)
+            exit 1
+    esac
+done
+
+[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
+
 AURORA_HOME="$HOME/aurora"
 AURORA_DOCKER_YML=${AURORA_HOME}/docker-compose.yml
-GITHUB_URL="raw.githubusercontent.com"
+[[ -z $FASTGIT ]] && GITHUB_RAW_URL="raw.githubusercontent.com" || GITHUB_RAW_URL="raw.fastgit.org"
 AURORA_GITHUB="Aurora-Admin-Panel"
-AURORA_YML_URL="https://${GITHUB_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
-AURORA_DEV_YML_URL="https://${GITHUB_URL}/${AURORA_GITHUB}/deploy/main/docker-compose-dev.yml"
+AURORA_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
+AURORA_DEV_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose-dev.yml"
 DOCKER_INSTALL_URL="https://get.docker.com"
-DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
+[[ -z $FASTGIT ]] && GITHUB_URL="github.com" || GITHUB_URL="download.fastgit.org"
+DOCKER_COMPOSE_URL="https://${GITHUB_URL}/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
 
-function check_root() {
-    [[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
-}
+AURORA_DEF_PORT=8000
+AURORA_DEF_TRAFF_MIN=10
+AURORA_DEF_DDNS_MIN=2
 
 function check_system() {
     source '/etc/os-release'
@@ -112,11 +130,10 @@ function read_port() {
 }
 
 function set_port() {
-    [[ -z $1 ]] && PORT=8000 || PORT=$1
+    [[ -z $1 ]] && PORT=${AURORA_DEF_PORT} || PORT=$1
     NEW_PORT=$(echo $2 | grep -Eo "[[:digit:]]+")
     [[ -z $NEW_PORT ]] && echo -e "${Error} 未检测到新端口号！" && exit 1
     sed -i "s/- $PORT:80/- $NEW_PORT:80/" ${AURORA_DOCKER_YML}
-    return 0
 }
 
 function check_run() {
@@ -138,11 +155,23 @@ function change_port() {
     echo -e "${Info} 端口修改成功！" || echo -e "${Error} 端口修改失败！"
 }
 
+function sec_to_min() {
+    [[ -z $1 ]] || sec=$(echo $1 | grep -v "\." | grep -Eo "[[:digit:]]+")
+    [[ -z $sec ]] || ((min=$sec/60))
+    echo $min
+}
+
+function min_to_sec() {
+    [[ -z $1 ]] || min=$(echo $1 | grep -v "\." | grep -Eo "[[:digit:]]+")
+    [[ -z $min ]] || ((sec=$min*60))
+    echo $sec
+}
+
 function echo_config() {
     [[ -z $PORT ]] || echo -e "${Info} 面板端口号: $PORT"
     [[ -z $ENABLE_SENTRY ]] || echo -e "${Info} 开启错误跟踪: $ENABLE_SENTRY"
-    [[ -z $TRAFFIC_INTERVAL_SECONDS ]] || echo -e "${Info} 流量同步周期: $TRAFFIC_INTERVAL_SECONDS s"
-    [[ -z $DDNS_INTERVAL_SECONDS ]] || echo -e "${Info} DDNS同步周期: $DDNS_INTERVAL_SECONDS s"
+    [[ -z $TRAFFIC_INTERVAL_SECONDS ]] || echo -e "${Info} 流量同步周期: $(sec_to_min $TRAFFIC_INTERVAL_SECONDS) 分钟"
+    [[ -z $DDNS_INTERVAL_SECONDS ]] || echo -e "${Info} DDNS同步周期: $(sec_to_min $DDNS_INTERVAL_SECONDS) 分钟"
 }
 
 function install() {
@@ -172,9 +201,12 @@ function update() {
     echo "-----------------------------------"
     [[ $AURORA_VERSION = "DEV" ]] && get_dev_config || get_config
     set_config
-    set_port $PORT $PORT
+    set_port ${AURORA_DEF_PORT} $PORT
     echo -e "${Info} 同步新配置文件完成！"
-    docker-compose pull && docker-compose down --remove-orphans && docker-compose up -d && \
+    docker-compose pull && docker-compose down --remove-orphans
+    OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
+    [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
+    docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
@@ -252,21 +284,40 @@ function add_superu() {
 }
 
 function set_traffic_interval() {
-    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+    check_install || exit 1
+    check_run && exit 1
+    read_config
+    echo -e "${Info} 旧流量同步间隔: $(sec_to_min $TRAFFIC_INTERVAL_SECONDS) 分钟"
+    read -r -e -p "请输入新同步间隔 [分钟]: " NEW_TRAFFIC_INTERVAL_MIN
+    NEW_TRAFFIC_INTERVAL_SEC=$(min_to_sec $NEW_TRAFFIC_INTERVAL_MIN)
+    [[ -z $NEW_TRAFFIC_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
+    sed -i "s/TRAFFIC_INTERVAL_SECONDS:.*$/TRAFFIC_INTERVAL_SECONDS: $NEW_TRAFFIC_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
+    read_config
+    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SEC ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    echo -e "${Info} 流量同步间隔修改成功！" || echo -e "${Error} 流量同步间隔修改失败！"
 }
 
 function set_ddns_interval() {
-    echo -e "${Info} 该功能暂未实现，请等待下一版本更新！"
+    check_install || exit 1
+    check_run && exit 1
+    read_config
+    echo -e "${Info} 旧DDNS同步间隔: $(sec_to_min $DDNS_INTERVAL_SECONDS) 分钟"
+    read -r -e -p "请输入新同步间隔 [分钟]: " NEW_DDNS_INTERVAL_MIN
+    NEW_DDNS_INTERVAL_SEC=$(min_to_sec $NEW_DDNS_INTERVAL_MIN)
+    [[ -z $NEW_DDNS_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
+    sed -i "s/DDNS_INTERVAL_SECONDS:.*$/DDNS_INTERVAL_SECONDS: $NEW_DDNS_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
+    read_config
+    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SEC ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    echo -e "${Info} DDNS同步间隔修改成功！" || echo -e "${Error} DDNS同步间隔修改失败！"
 }
 
 function welcome_aurora() {
-    check_root
     check_system
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
-    1.  安装 极光面板
-    2.  更新 极光面板
+    1.  安装 极光面板 ${FASTGIT} ${AURORA_VERSION}
+    2.  更新 极光面板 ${FASTGIT} ${AURORA_VERSION}
     3.  卸载 极光面板
     ————————————
     4.  启动 极光面板
@@ -281,9 +332,9 @@ function welcome_aurora() {
     11. 备份 数据库
     12. 还原 数据库
     13. 添加 管理员用户
-    14. 修改 面板访问端口（默认 8000）
-    15. 修改 面板流量同步间隔（默认 600s）
-    16. 修改 DDNS同步间隔（默认 120s）
+    14. 修改 面板访问端口（默认 ${AURORA_DEF_PORT}）
+    15. 修改 面板流量同步间隔（默认 ${AURORA_DEF_TRAFF_MIN} 分钟）
+    16. 修改 DDNS同步间隔（默认 ${AURORA_DEF_DDNS_MIN} 分钟）
     ————————————
     0.  退出脚本
     ————————————
