@@ -15,8 +15,8 @@ DOCKER_INSTALL_URL="https://get.docker.com"
 DOCKER_COMPOSE_URL="https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
 
 AURORA_DEF_PORT=8000
-AURORA_DEF_TRAFF=10
-AURORA_DEF_DDNS=2
+AURORA_DEF_TRAFF_MIN=10
+AURORA_DEF_DDNS_MIN=2
 
 function check_root() {
     [[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
@@ -191,7 +191,7 @@ function update() {
     echo -e "${Info} 同步新配置文件完成！"
     docker-compose pull && docker-compose down --remove-orphans
     OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
-    [[ -z $OLD_IMG_IDS ]] || docker image rm $OLD_IMG_IDS
+    [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
     docker-compose up -d && \
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
@@ -319,9 +319,9 @@ function welcome_aurora() {
     11. 备份 数据库
     12. 还原 数据库
     13. 添加 管理员用户
-    14. 修改 面板访问端口（默认${AURORA_DEF_PORT}）
-    15. 修改 面板流量同步间隔（默认${AURORA_DEF_TRAFF}分钟）
-    16. 修改 DDNS同步间隔（默认${AURORA_DEF_DDNS}分钟）
+    14. 修改 面板访问端口（默认 ${AURORA_DEF_PORT}）
+    15. 修改 面板流量同步间隔（默认 ${AURORA_DEF_TRAFF_MIN} 分钟）
+    16. 修改 DDNS同步间隔（默认 ${AURORA_DEF_DDNS_MIN} 分钟）
     ————————————
     0.  退出脚本
     ————————————
