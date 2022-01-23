@@ -273,21 +273,35 @@ function export_logs() {
     echo -e "${Info} 日志导出成功：${AURORA_HOME}/logs" || echo -e "${Error} 日志导出失败！"
 }
 
-function backup() {
-    check_install || exit 1
-    [[ -z $(docker ps | grep aurora | grep postgres) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
+function read_db_info() {
     DB_USER=$(grep POSTGRES_USER ${AURORA_DOCKER_YML} | awk '{print $2}')
     [[ -z $DB_USER ]] && DB_USER="aurora"
     DB_NAME=$(grep POSTGRES_DB ${AURORA_DOCKER_YML} | awk '{print $2}')
     [[ -z $DB_NAME ]] && DB_NAME="aurora"
+}
+
+function backup() {
+    check_install || exit 1
+    [[ -z $(docker ps | grep aurora | grep postgres) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
     BACKUP_FILE="data-$(date +%Y%m%d%H%M%S).sql"
+    read_db_info
     cd ${AURORA_HOME} && docker-compose exec postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
     echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
 
 function restore() {
     check_install || exit 1
-    echo -e "${Tip} 高危操作，请手动执行！" && exit 0
+    [[ -z $(docker ps | grep aurora | grep postgres) ]] && \
+    echo -e "${Error} 请先运行极光面板，以保证还原前完成自动备份旧数据库！" && exit 1 || \
+    (echo -e "${Tip} 正在备份旧数据库，如果还原后出现问题，请恢复旧数据库！" && backup)
+    read -r -e -p "请输入需恢复的数据库文件路径: " BACKUP_FILE
+    [[ ! -f $BACKUP_FILE ]] && echo -e "${Error} 无法找到数据库文件！" && exit 1
+    cd ${AURORA_HOME}
+    read_db_info
+    docker stop $(docker-compose ps | awk '/Up / { print $1;}' | grep aurora | grep -v postgres) && \
+    docker-compose exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
+    docker-compose up -d && \
+    echo -e "${Info} 数据库还原成功！" || echo -e "${Error} 数据库还原失败！"
 }
 
 function add_superu() {
