@@ -280,7 +280,7 @@ function backup() {
     [[ -z $DB_USER ]] && DB_USER="aurora"
     DB_NAME=$(grep POSTGRES_DB ${AURORA_DOCKER_YML} | awk '{print $2}')
     [[ -z $DB_NAME ]] && DB_NAME="aurora"
-    BACKUP_FILE="data-$(date +\%Y\%m\%d\%H\%M\%S).sql"
+    BACKUP_FILE="data-$(date +%Y%m%d%H%M%S).sql"
     cd ${AURORA_HOME} && docker-compose exec postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
     echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
