@@ -210,6 +210,9 @@ function update() {
     set_config
     set_port ${AURORA_DEF_PORT} $PORT
     echo -e "${Info} 同步新配置文件完成！"
+    [[ -z $(docker ps | grep aurora | grep postgres) ]] && \
+    echo -e "${Error} 请先运行极光面板，以保证更新前完成自动备份旧数据库！" && exit 1 || \
+    (echo -e "${Tip} 正在备份旧数据库，如果更新后出现问题，请回退旧版本并恢复旧数据库！" && backup)
     docker-compose pull && docker-compose down --remove-orphans
     OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
@@ -277,8 +280,9 @@ function backup() {
     [[ -z $DB_USER ]] && DB_USER="aurora"
     DB_NAME=$(grep POSTGRES_DB ${AURORA_DOCKER_YML} | awk '{print $2}')
     [[ -z $DB_NAME ]] && DB_NAME="aurora"
-    cd ${AURORA_HOME} && docker-compose exec postgres pg_dump -d $DB_NAME -U $DB_USER -c > data.sql && \
-    echo -e "${Info} 数据库导出成功：${AURORA_HOME}/data.sql" || echo -e "${Error} 数据库导出失败！"
+    BACKUP_FILE="data-$(date +\%Y\%m\%d\%H\%M\%S).sql"
+    cd ${AURORA_HOME} && docker-compose exec postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
+    echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
 
 function restore() {
