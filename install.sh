@@ -285,7 +285,7 @@ function backup() {
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
     BACKUP_FILE="data-$(date +%Y%m%d%H%M%S).sql"
     read_db_info
-    cd ${AURORA_HOME} && docker-compose exec postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
+    cd ${AURORA_HOME} && docker-compose exec -T postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
     echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
 
@@ -298,7 +298,7 @@ function restore() {
     [[ ! -f $BACKUP_FILE ]] && echo -e "${Error} 无法找到数据库文件！" && exit 1
     cd ${AURORA_HOME}
     read_db_info
-    docker stop $(docker-compose ps | awk '/Up / { print $1;}' | grep aurora | grep -v postgres) && \
+    docker stop $(docker-compose ps | grep aurora | grep -v postgres | awk '{ print $1; }') && \
     docker-compose exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
     docker-compose up -d && \
     echo -e "${Info} 数据库还原成功！" || echo -e "${Error} 数据库还原失败！"
