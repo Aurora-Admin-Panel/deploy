@@ -68,9 +68,9 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/ma
 
 一键脚本默认从 Github 拉取所需的配置文件，如果是在国内机器安装，请检查连接 Github 的网络是否正常。一键脚本也支持更新测试版本，只需要添加 `--dev` 参数执行脚本即可，但是测试版本并不稳定，可能会出现各种问题，不建议在生产环境中使用。
 
-## 手动安装—中转被控机
+## 手动安装 — 中转被控机
 
-**对于不在中转机器（被控机）支持进度里面的系统版本，无法直接使用面板连接中转机器。** 如果被控机支持运行 docker，则可以利用被控机运行一个网络模式为 host 的特权 centos7 容器，并利用面板连接到 centos7 docker 中，实现转发功能的操作。
+**对于不在中转机器（被控机）支持进度里面的系统版本，无法直接使用面板连接中转机器。** 如果被控机支持运行 docker，则可以利用被控机运行一个网络模式为 host 的特权 centos7 容器，并利用面板连接到 centos7 docker 中，实现转发功能的操作。（或可以参考 [aurora-client](https://github.com/smartcatboy/aurora-client) 直接编译被控端镜像运行）
 
 ```shell
 # 启动 centos 7 特权容器，设置网络模式为 host ，并设置为开机自启动
@@ -91,7 +91,7 @@ passwd
 sudo docker stop aurora-client && sudo docker rm aurora-client
 ```
 
-## 手动安装—面板主控机
+## 手动安装 — 面板主控机
 
 如果一键脚本提示不支持当前系统版本时，可以尝试使用手动安装的方式。
 
@@ -169,7 +169,7 @@ docker-compose pull && docker-compose down --remove-orphans && docker-compose up
 
 ### 备份
 ```shell
-docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
+docker-compose exec -T postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
 ```
 
 ### 恢复
