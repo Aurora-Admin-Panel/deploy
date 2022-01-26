@@ -9,7 +9,7 @@
 - [gost](https://github.com/ginuerzh/gost) ( AMD64 / ARM64 )
 - [ehco](https://github.com/Ehco1996/ehco) ( AMD64 / ARM64 )
 - [realm](https://github.com/zhboner/realm) ( AMD64 )
-- [v2ray](https://github.com/v2ray/v2ray-core) ( AMD64 )
+- [v2ray](https://github.com/v2fly/v2ray-core) ( AMD64 / ARM64 )
 - [brook](https://github.com/txthinking/brook) ( AMD64 / ARM64 )
 - [iperf](https://iperf.fr) ( AMD64 / ARM64 )
 - [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 )
@@ -44,7 +44,7 @@
 - [x] CentOS 7+
 - [x] Debian 8+
 - [x] Ubuntu 18+
-- [ ] Alpine Linux 3.15.0+  （正在开发中，目前仅支持添加到面板，不支持任何转发功能）
+- [ ] Alpine Linux 3.15.0+  （正在开发中，目前仅支持部分 iptables 转发功能）
 - [x] 其他操作系统如果支持 docker，可以参考下面的手动安装方法
 - 虚拟平台
 - [x] KVM
@@ -53,6 +53,10 @@
 - CPU 架构
 - [x] AMD64
 - [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
+- Linux init process
+- [x] systemd
+- [ ] SysVinit
+- [ ] OpenRC
 
 ## 怎么跑起来？
 
