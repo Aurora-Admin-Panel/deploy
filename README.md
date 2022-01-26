@@ -14,8 +14,8 @@
 - [iperf](https://iperf.fr) ( AMD64 / ARM64 )
 - [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 )
 - [shadowsocks](https://github.com/shadowsocks) ( AMD64 / ARM64 (only AEAD) )
-- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64 / ARM64 )
-- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 )
+- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64  / ARM64 )
+- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 / ARM64 )
 
 ### 面板服务器与被控机说明
 
