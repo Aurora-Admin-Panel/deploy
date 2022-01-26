@@ -9,13 +9,13 @@
 - [gost](https://github.com/ginuerzh/gost) ( AMD64 / ARM64 )
 - [ehco](https://github.com/Ehco1996/ehco) ( AMD64 / ARM64 )
 - [realm](https://github.com/zhboner/realm) ( AMD64 )
-- [v2ray](https://github.com/v2ray/v2ray-core) ( AMD64 )
+- [v2ray](https://github.com/v2fly/v2ray-core) ( AMD64 / ARM64 )
 - [brook](https://github.com/txthinking/brook) ( AMD64 / ARM64 )
 - [iperf](https://iperf.fr) ( AMD64 / ARM64 )
 - [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 )
 - [shadowsocks](https://github.com/shadowsocks) ( AMD64 / ARM64 (only AEAD) )
-- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64 / ARM64 )
-- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 )
+- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64  / ARM64 )
+- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 / ARM64 )
 
 ### 面板服务器与被控机说明
 
@@ -44,7 +44,8 @@
 - [x] CentOS 7+
 - [x] Debian 8+
 - [x] Ubuntu 18+
-- [ ] Alpine Linux 3.15.0+  （正在开发中，目前仅支持添加到面板，不支持任何转发功能）
+- [ ] Alpine Linux 3.15.0+  （正在开发中，目前仅支持部分 iptables 转发功能）
+- [x] 其他操作系统如果支持 docker，可以参考下面的手动安装方法
 - 虚拟平台
 - [x] KVM
 - [x] VMware
@@ -52,12 +53,16 @@
 - CPU 架构
 - [x] AMD64
 - [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
+- Linux init process
+- [x] systemd
+- [ ] SysVinit
+- [ ] OpenRC
 
 ## 怎么跑起来？
 
 ## 一键脚本（推荐）
 
-目前已支持一键安装、更新（自动同步旧配置）、卸载面板以及备份数据库、添加超级管理员帐号、更换面板端口等操作。
+目前已支持一键安装、更新（自动同步旧配置）、卸载面板以及备份数据库、添加超级管理员帐号、更换面板端口等操作。**使用一键脚本安装后，如果仍需使用一脚脚本更新，请勿更改数据库用户名和密码，否则会使得更新后无法同步更改后的数据库用户名和密码，导致数据库连接出错。**
 
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
@@ -67,7 +72,30 @@ bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/ma
 
 一键脚本默认从 Github 拉取所需的配置文件，如果是在国内机器安装，请检查连接 Github 的网络是否正常。一键脚本也支持更新测试版本，只需要添加 `--dev` 参数执行脚本即可，但是测试版本并不稳定，可能会出现各种问题，不建议在生产环境中使用。
 
-## 手动安装
+## 手动安装 — 中转被控机
+
+**对于不在中转机器（被控机）支持进度里面的系统版本，无法直接使用面板连接中转机器。** 如果被控机支持运行 docker，则可以利用被控机运行一个网络模式为 host 的特权 centos7 容器，并利用面板连接到 centos7 docker 中，实现转发功能的操作。（或可以参考 [aurora-client](https://github.com/smartcatboy/aurora-client) 直接编译被控端镜像运行）
+
+```shell
+# 启动 centos 7 特权容器，设置网络模式为 host ，并设置为开机自启动
+sudo docker run -d --privileged --name aurora-client --network=host --restart=always -v /lib/modules:/lib/modules centos:7 /usr/sbin/init
+# 进入 centos 7 容器内
+sudo docker exec -it aurora-client bash
+# 在 docker 内安装 openssh 服务端，并修改容器的 ssh 端口（避免跟主机 ssh 服务冲突）
+yum makecache -y && yum install -y openssh-server
+sed -i "s/#Port 22/Port 62222/" /etc/ssh/sshd_config
+# 启用 ssh 服务
+systemctl enable --now sshd
+# 安装 iptables 转发必须的依赖
+yum install -y iproute
+# 为 root 账号设置密码
+passwd
+# 直接在面板添加中转机器 ip:62222 ，用户名 root ，密码为刚刚设置的密码
+# 卸载时候只需要在面板删除对应中转机，并删除 aurora-client 容器即可
+sudo docker stop aurora-client && sudo docker rm aurora-client
+```
+
+## 手动安装 — 面板主控机
 
 如果一键脚本提示不支持当前系统版本时，可以尝试使用手动安装的方式。
 
@@ -145,7 +173,7 @@ docker-compose pull && docker-compose down --remove-orphans && docker-compose up
 
 ### 备份
 ```shell
-docker-compose exec postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
+docker-compose exec -T postgres pg_dump -d aurora -U [数据库用户名，默认aurora] -c > data.sql
 ```
 
 ### 恢复
