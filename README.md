@@ -12,7 +12,7 @@
 - [v2ray](https://github.com/v2fly/v2ray-core) ( AMD64 / ARM64 )
 - [brook](https://github.com/txthinking/brook) ( AMD64 / ARM64 )
 - [iperf](https://iperf.fr) ( AMD64 / ARM64 )
-- [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 )
+- [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 / ARM64 )
 - [shadowsocks](https://github.com/shadowsocks) ( AMD64 / ARM64 (only AEAD) )
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64  / ARM64 )
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 / ARM64 )
@@ -52,7 +52,7 @@
 - [x] OVZ
 - CPU 架构
 - [x] AMD64
-- [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
+- [x] ARM64
 - Linux init process
 - [x] systemd
 - [ ] SysVinit
