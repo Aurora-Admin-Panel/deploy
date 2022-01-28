@@ -2,26 +2,26 @@
 
 ## 这是什么？
 
-这是一个多服务器端口租用管理面板，你可以添加多台服务器及端口，并将其分配给任意注册用户，租户则可以很方便地使用被分配的端口来完成各种操作，目前支持的端口功能：
+这是一个多服务器端口租用管理面板，你可以添加多台服务器及端口，并将其分配给任意注册用户，租户则可以很方便地使用被分配的端口来完成各种操作，目前支持的端口功能（**以下功能均支持 AMD64 或 ARM64 架构运行**）：
 
-- [iptables](https://www.netfilter.org/) ( AMD64 / ARM64 )
-- [socat](http://www.dest-unreach.org/socat/) ( AMD64 / ARM64 )
-- [gost](https://github.com/ginuerzh/gost) ( AMD64 / ARM64 )
-- [ehco](https://github.com/Ehco1996/ehco) ( AMD64 / ARM64 )
-- [realm](https://github.com/zhboner/realm) ( AMD64 )
-- [v2ray](https://github.com/v2fly/v2ray-core) ( AMD64 / ARM64 )
-- [brook](https://github.com/txthinking/brook) ( AMD64 / ARM64 )
-- [iperf](https://iperf.fr) ( AMD64 / ARM64 )
-- [wstunnel](https://github.com/erebe/wstunnel) ( AMD64 )
-- [shadowsocks](https://github.com/shadowsocks) ( AMD64 / ARM64 (only AEAD) )
-- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper) ( AMD64  / ARM64 )
-- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter) ( AMD64 / ARM64 )
+- [iptables](https://www.netfilter.org/)
+- [socat](http://www.dest-unreach.org/socat/)
+- [gost](https://github.com/ginuerzh/gost)
+- [ehco](https://github.com/Ehco1996/ehco)
+- [realm](https://github.com/zephyrchien/realm)
+- [v2ray](https://github.com/v2fly/v2ray-core)
+- [brook](https://github.com/txthinking/brook)
+- [iperf](https://iperf.fr)
+- [wstunnel](https://github.com/erebe/wstunnel)
+- [shadowsocks](https://github.com/shadowsocks)
+- [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
+- [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter)
 
 ### 面板服务器与被控机说明
 
 **面板建议安装在单独的一台服务器上，建议安装配置为不低于单核 512M 内存的 VPS 中**，可以直接部署到本地。**被控机端无需做任何特别配置，只需保证面板服务器能够通过 ssh 连接至被控机即可。**
 
-面板服务器在连接被控机的时候会检测被控机是否已经安装好 python （python 为被控机必须依赖），如果被控机上没安装会自动在被控机上通过 apt / yum 执行 python 安装（优先安装python3），如果被控机没有自带 python 且自动安装失败会导致面板显示被控机连接失败（表现为被控机连接状态持续转圈）。从 0.16.4 版本开始，会加入对被控机 iptables 和 systemd 依赖的检测安装，以保证转发、流量统计等必需功能正常运行。
+面板服务器在连接被控机的时候会检测被控机是否已经安装好 python （python 为被控机必须依赖），如果被控机上没安装会自动在被控机上通过 apt / yum 执行 python 安装（优先安装python3），如果被控机没有自带 python 且自动安装失败会导致面板显示被控机连接失败（表现为被控机连接状态持续转圈）。
 
 #### 面板（主控机）支持进度：
 
@@ -36,7 +36,7 @@
 - [x] OVZ （需要 OVZ 支持 docker）
 - CPU 架构
 - [x] AMD64
-- [x] ARM64 （0.15.3+ 镜像版本支持）
+- [x] ARM64
 
 #### 中转机器（被控机）支持进度：
 
@@ -52,7 +52,7 @@
 - [x] OVZ
 - CPU 架构
 - [x] AMD64
-- [x] ARM64 （0.16.3+ 镜像版本支持，仅支持部分功能）
+- [x] ARM64
 - Linux init process
 - [x] systemd
 - [ ] SysVinit
