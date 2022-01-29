@@ -44,7 +44,7 @@
 - [x] CentOS 7+
 - [x] Debian 8+
 - [x] Ubuntu 18+
-- [ ] Alpine Linux 3.15.0+  （正在开发中，目前仅支持部分 iptables 转发功能）
+- [ ] Alpine Linux 3.15.0+  （正在开发中，仅支持 iptables 转发和流量统计）
 - [x] 其他操作系统如果支持 docker，可以参考下面的手动安装方法
 - 虚拟平台
 - [x] KVM
