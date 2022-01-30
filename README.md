@@ -17,6 +17,8 @@
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter)
 
+目前，全部端口转发功能均已支持 `IPV6` ，如果中转机器本身同时具备 `IPV4` 和 `IPV6` 网络访问能力，可以借助端口转发实现 `IPV4 to IPV6` 或 `IPV6 to IPV4`。
+
 ### 面板服务器与被控机说明
 
 **面板建议安装在单独的一台服务器上，建议安装配置为不低于单核 512M 内存的 VPS 中**，可以直接部署到本地。**被控机端无需做任何特别配置，只需保证面板服务器能够通过 ssh 连接至被控机即可。**
