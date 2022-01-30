@@ -12,6 +12,7 @@
 - [v2ray](https://github.com/v2fly/v2ray-core)
 - [brook](https://github.com/txthinking/brook)
 - [iperf](https://iperf.fr)
+- [haproxy](http://www.haproxy.org)
 - [wstunnel](https://github.com/erebe/wstunnel)
 - [shadowsocks](https://github.com/shadowsocks)
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
