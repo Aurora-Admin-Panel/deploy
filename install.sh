@@ -238,12 +238,21 @@ function update() {
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
+function backup_data_after_uninstall(){
+    if [ ! -d "$HOME/aurora_backup" ]; then
+        mkdir $HOME/aurora_backup
+    fi
+    if [ -e ${AURORA_HOME}/data* ]; then
+        mv ${AURORA_HOME}/data* ${AURORA_HOME}"_backup" && \
+        echo -e "${Info} 已有的数据库备份文件已移动到备份目录：${AURORA_HOME}_backup" && \
+        echo -e "${Info} 如果不需要备份，可自行删除文件 rm -rf ${AURORA_HOME}_backup"
+    fi
+    
+}
+
 function uninstall() {
     [ -f ${AURORA_DOCKER_YML} ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
-    (echo -e "${Tip} 正在备份数据库，如果是意外卸载请重新安装面板并恢复数据库！" && backup) && \
-    mv ${AURORA_HOME}/$BACKUP_FILE ${HOME}/$BACKUP_FILE && \
-    echo -e "${Info} 数据库已移动到用户目录：${HOME}/$BACKUP_FILE" && \
-    echo -e "${Info} 如果不需要备份，可自行删除文件 rm -f ${HOME}/$BACKUP_FILE"
+    (echo -e "${Tip} 正在备份数据库，如果是意外卸载请重新安装面板并恢复数据库！" && backup) && backup_data_after_uninstall
     cd ${AURORA_HOME}
     [[ -n $(docker ps | grep aurora) ]] && docker-compose down
     OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')
