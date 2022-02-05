@@ -20,6 +20,24 @@ while [[ $# -ge 1 ]]; do
             exit 1
     esac
 done
+if [[ $(curl -m 10 -s https://api.ip.sb/geoip | grep 'China') != "" ]]; then
+    echo "根据ip.sb提供的信息，当前IP可能在中国"
+    read -e -r -p "是否选用中国镜像完成安装? [Y/n] " input
+    case $input in
+    [yY][eE][sS] | [yY])
+        echo "使用中国镜像"
+        FASTGIT="镜像加速"
+        ;;
+
+    [nN][oO] | [nN])
+        echo "不使用中国镜像"
+        ;;
+    *)
+        echo "使用中国镜像"
+        FASTGIT="镜像加速"
+        ;;
+    esac
+fi
 
 [[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
 
@@ -222,6 +240,10 @@ function update() {
 
 function uninstall() {
     [ -f ${AURORA_DOCKER_YML} ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
+    (echo -e "${Tip} 正在备份数据库，如果是意外卸载请重新安装面板并恢复数据库！" && backup) && \
+    mv ${AURORA_HOME}/$BACKUP_FILE ${HOME}/$BACKUP_FILE && \
+    echo -e "${Info} 数据库已移动到用户目录：${HOME}/$BACKUP_FILE" && \
+    echo -e "${Info} 如果不需要备份，可自行删除文件 rm -f ${HOME}/$BACKUP_FILE"
     cd ${AURORA_HOME}
     [[ -n $(docker ps | grep aurora) ]] && docker-compose down
     OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')
