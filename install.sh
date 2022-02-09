@@ -44,6 +44,7 @@ fi
 AURORA_HOME="$HOME/aurora"
 AURORA_HOME_BACKUP="$HOME/aurora_backup"
 AURORA_DOCKER_YML=${AURORA_HOME}/docker-compose.yml
+AURORA_DOCKER_YML_TEMP=${AURORA_HOME}/docker-compose.yml.tmp
 [[ -z $FASTGIT ]] && GITHUB_RAW_URL="raw.githubusercontent.com" || GITHUB_RAW_URL="raw.fastgit.org"
 AURORA_GITHUB="Aurora-Admin-Panel"
 AURORA_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
@@ -115,13 +116,11 @@ function install_all() {
 }
 
 function get_config() {
-    echo -e "${Info} 正在下载最新正式版配置文件 ..."
-    wget -q ${AURORA_YML_URL} -O ${AURORA_DOCKER_YML}
-}
-
-function get_dev_config() {
-    echo -e "${Info} 正在下载最新测试版配置文件 ..."
-    wget -q ${AURORA_DEV_YML_URL} -O ${AURORA_DOCKER_YML}
+    echo -e "${Info} 正在下载最新配置文件 ..."
+    [[ $AURORA_VERSION == "DEV" ]] && YML_URL=${AURORA_DEV_YML_URL} || YML_URL=${AURORA_YML_URL}
+    wget -q $YML_URL -O ${AURORA_DOCKER_YML_TEMP}
+    [[ -z $(grep aurora ${AURORA_DOCKER_YML_TEMP}) ]] && echo -e "${Error} 配置文件下载失败，请检查网络连接是否正常！" && exit 1
+    mv -f ${AURORA_DOCKER_YML_TEMP} ${AURORA_DOCKER_YML}
 }
 
 function check_install() {
@@ -203,10 +202,9 @@ function echo_config() {
 function install() {
     install_all
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Tip} 极光面板已经安装，且正在运行！" && exit 0
-    [ -d ${AURORA_HOME} ] || mkdir -p ${AURORA_HOME}
+    [[ -d ${AURORA_HOME} ]] || mkdir -p ${AURORA_HOME}
     cd ${AURORA_HOME}
-    [[ $AURORA_VERSION = "DEV" ]] && get_dev_config || get_config
-    echo -e "${Info} 下载配置文件中 ..."
+    get_config || exit 1
     echo "-----------------------------------"
     read_config
     read_port
