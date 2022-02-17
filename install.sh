@@ -223,7 +223,7 @@ function update() {
     read_port
     echo_config
     echo "-----------------------------------"
-    [[ $AURORA_VERSION = "DEV" ]] && get_dev_config || get_config
+    get_config || exit 1
     set_config
     set_port ${AURORA_DEF_PORT} $PORT
     echo -e "${Info} 同步新配置文件完成！"
