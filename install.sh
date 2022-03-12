@@ -1,6 +1,13 @@
 #! /bin/bash
 
-Green_font_prefix="\033[32m" && Red_font_prefix="\033[31m" && Green_background_prefix="\033[42;37m" && Red_background_prefix="\033[41;37m" && Font_color_suffix="\033[0m"
+[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
+export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+Green_font_prefix="\033[32m"
+Green_background_prefix="\033[42;37m"
+Red_font_prefix="\033[31m"
+Red_background_prefix="\033[41;37m"
+Font_color_suffix="\033[0m"
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
@@ -21,26 +28,25 @@ while [[ $# -ge 1 ]]; do
     esac
 done
 
-if [[ $(curl -m 10 -s https://api.ip.sb/geoip | grep 'China') != "" ]]; then
-    echo -e "${Tip} 根据 ip.sb 提供的信息，当前 IP 可能在中国"
-    read -e -r -p "是否选用镜像完成安装? [Y/n] " input
-    case $input in
-    [yY][eE][sS] | [yY])
-        echo -e "${Tip} 使用中国镜像"
-        FASTGIT="镜像加速"
-        ;;
-    [nN][oO] | [nN])
-        echo -e "${Tip} 不使用中国镜像"
-        ;;
-    *)
-        echo "使用中国镜像"
-        FASTGIT="镜像加速"
-        ;;
-    esac
+if curl --version > /dev/null 2>&1; then
+    if [[ -n $(curl -m 5 -s https://api.ip.sb/geoip | grep "China") ]]; then
+        echo -e "${Tip} 根据 ip.sb 提供的信息，当前 IP 可能在中国"
+        read -e -r -p "是否选用 fastgit 镜像完成安装? [Y/n] " input
+        case $input in
+        [yY][eE][sS] | [yY])
+            echo -e "${Tip} 使用 github 镜像加速 ..."
+            FASTGIT="镜像加速"
+            ;;
+        [nN][oO] | [nN])
+            ;;
+        *)
+            ;;
+        esac
+    fi
 fi
 
-[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
-
+INSTALL_VERSION="1.0.0"
+[[ -z "$HOME" ]] && echo -e "${Error} 家目录检查失败！" && exit 1
 AURORA_HOME="$HOME/aurora"
 AURORA_HOME_BACKUP="$HOME/aurora_backup"
 AURORA_DOCKER_YML=${AURORA_HOME}/docker-compose.yml
@@ -210,6 +216,9 @@ function install() {
     read_port
     echo_config
     echo "-----------------------------------"
+    [[ ! -d "$HOME"/.ssh ]] && mkdir -p "$HOME"/.ssh
+    # avoid docker creating a directory automatically
+    [[ ! -f "$HOME"/.ssh/id_rsa ]] && touch "$HOME"/.ssh/id_rsa
     docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
     (echo -e "${Info} 极光面板安装成功，已启动！" && exit 0) || (echo -e "${Error} 极光面板安装失败！" && exit 1)
 }
@@ -237,7 +246,7 @@ function update() {
     (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
-function backup_data_after_uninstall(){
+function backup_data_before_uninstall(){
     if [ ! -d ${AURORA_HOME_BACKUP} ]; then
         mkdir ${AURORA_HOME_BACKUP}
     fi
@@ -250,7 +259,7 @@ function uninstall() {
     [ -f ${AURORA_DOCKER_YML} ] || (echo -e "${Tip} 未检测到已经安装极光面板！" && exit 0)
     [[ -n $(docker ps | grep aurora | grep postgres) ]] && \
     echo -e "${Tip} 正在备份数据库，如果意外卸载请重新安装面板并恢复数据库！" && backup
-    backup_data_after_uninstall
+    backup_data_before_uninstall
     cd ${AURORA_HOME}
     [[ -n $(docker ps | grep aurora) ]] && docker-compose down
     OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')

@@ -15,6 +15,9 @@ services:
       - app-data:/app/ansible/priv_data_dirs
     depends_on:
       - redis
+    networks:
+      - aurora
+      - worker
 
   backend:
     image: leishi1313/aurora-admin-backend:latest
@@ -31,6 +34,8 @@ services:
     depends_on:
       - postgres
       - redis
+    networks:
+      - aurora
 
   nginx:
     image: leishi1313/aurora-admin-frontend:latest
@@ -41,12 +46,16 @@ services:
       - 8000:80
     depends_on:
       - backend
+    networks:
+      - aurora
 
   redis:
     image: redis
     restart: always
     environment:
       TZ: 'Asia/Shanghai'
+    networks:
+      - aurora
 
   postgres:
     image: postgres:13-alpine
@@ -58,8 +67,22 @@ services:
       POSTGRES_DB: aurora
     volumes:
       - db-data:/var/lib/postgresql/data
+    networks:
+      - aurora
 
 
 volumes:
   db-data:
   app-data:
+
+networks:
+  worker:
+    enable_ipv6: true
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: fd00:ea23:9c80:4a54:e242:5f97::/96
+          gateway: fd00:ea23:9c80:4a54:e242:5f97::0
+  aurora:
+    driver: bridge

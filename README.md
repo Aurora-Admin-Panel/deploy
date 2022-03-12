@@ -18,7 +18,7 @@
 - [tinyPortMapper](https://github.com/wangyu-/tinyPortMapper)
 - [Prometheus Node Exporter](https://github.com/leishi1313/node_exporter)
 
-目前，全部端口转发功能均已支持 `IPV6` ，如果中转机器本身同时具备 `IPV4` 和 `IPV6` 网络访问能力，可以借助端口转发实现 `IPV4 to IPV6` 或 `IPV6 to IPV4`。
+目前，全部端口转发功能均已支持 `IPV6` 。除 `iptables` 以外的转发方式，如果中转机器本身同时具备 `IPV4` 和 `IPV6` 网络访问能力，可以借助端口转发实现 `IPV4 to IPV6` 或 `IPV6 to IPV4`。
 
 ### 面板服务器与被控机说明
 
@@ -40,6 +40,15 @@
 - CPU 架构
 - [x] AMD64
 - [x] ARM64
+- 网络类型
+- [x] IPV4
+- [X] IPV6
+
+特别说明：由于 docker 默认不开启 IPV6，如果需要在面板通过 IPV6 连接被控机 SSH，请在面板机器使用 `ip6tables` 命令为容器添加 IPV6 NAT：
+
+```shell
+ip6tables -t nat -A POSTROUTING -s fd00:ea23:9c80:4a54:e242:5f97::/96 -j MASQUERADE
+```
 
 #### 中转机器（被控机）支持进度：
 
@@ -56,6 +65,9 @@
 - CPU 架构
 - [x] AMD64
 - [x] ARM64
+- 网络类型
+- [x] IPV4
+- [X] IPV6
 - Linux init process
 - [x] systemd
 - [ ] SysVinit
@@ -70,6 +82,8 @@
 ```shell
 bash <(curl -fsSL https://raw.githubusercontent.com/Aurora-Admin-Panel/deploy/main/install.sh)
 # 国内机器安装可以选择使用 fastgit 镜像
+# 但由于拉取 docker 镜像时候默认服务器仍在国外，可能拉取速度较慢
+# 可自行搜索如何配置 Docker Hub 国内镜像加速
 # bash <(curl -fsSL https://raw.fastgit.org/Aurora-Admin-Panel/deploy/main/install.sh) --mirror
 ```
 
