@@ -392,10 +392,11 @@ function enable_ipv6() {
     IPV6_SUBNET=$(sed -n 's/^.*subnet:\s*\(.*\)$/\1/p' ${AURORA_DOCKER_YML})
     check_ip6tables_masq || (ip6tables -t nat -A POSTROUTING -s ${IPV6_SUBNET} -j MASQUERADE -m comment --comment "${AURORA_IP6TABLES_MASQ_COMMENT}" && \
         echo -e "${Info} 已添加 IPV6 MASQ 规则！")
-    sed -i "s/enable_ipv6:.*$/enable_ipv6: true/" ${AURORA_DOCKER_YML}
+    sed -i "s/    enable_ipv6:.*$/    enable_ipv6: true/" ${AURORA_DOCKER_YML}
     stop
     start
     check_ipv6_enabled
+    echo -e "${Tip} 重启系统会导致 ip6tables 规则被重置，需要重新添加！"
 }
 
 function welcome_aurora() {

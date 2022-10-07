@@ -49,10 +49,8 @@
 ```shell
 # 1. docker-compose.yml 配置开启 ipv6 选项，该配置文件默认在 ~/aurora/ 目录下
 # 找到 enable_ipv6: false 该行，将 false 改为 true，重建容器
-# 如果重建提示 "Address already in use" 错误，请先替换为 2.3.3 版本的 docker-compose
-# https://github.com/docker/compose/releases/download/v2.3.3/docker-compose-linux-x86_64
 cd ~/aurora/ && docker-compose up -d
-# 2. ip6tables 命令，直接复制粘贴回车即可
+# 2. ip6tables 命令，直接复制粘贴回车即可（注意，重启系统会导致 ip6tables 规则被重置，需要手动重新添加）
 ip6tables -t nat -A POSTROUTING -s fd00:ea23:9c80:4a54:e242:5f97::/96 -j MASQUERADE
 ```
 

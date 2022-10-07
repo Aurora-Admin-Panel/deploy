@@ -79,10 +79,12 @@ networks:
   worker:
     enable_ipv6: false
     driver: bridge
+    driver_opts:
+      com.docker.network.enable_ipv6: "true"
     ipam:
       driver: default
       config:
         - subnet: fd00:ea23:9c80:4a54:e242:5f97::/96
-          gateway: fd00:ea23:9c80:4a54:e242:5f97::0
+          gateway: fd00:ea23:9c80:4a54:e242:5f97::1
   aurora:
     driver: bridge
