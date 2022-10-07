@@ -1,6 +1,5 @@
 #! /bin/bash
 
-[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 Green_font_prefix="\033[32m"
@@ -11,6 +10,8 @@ Font_color_suffix="\033[0m"
 Info="${Green_font_prefix}[信息]${Font_color_suffix}"
 Error="${Red_font_prefix}[错误]${Font_color_suffix}"
 Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
+
+[[ $EUID != 0 ]] && echo -e "${Error} 请使用 root 账号运行该脚本！" && exit 1
 
 while [[ $# -ge 1 ]]; do
     case $1 in
@@ -63,6 +64,7 @@ AURORA_DEF_IP=""
 AURORA_DEF_PORT=8000
 AURORA_DEF_TRAFF_MIN=10
 AURORA_DEF_DDNS_MIN=2
+AURORA_IP6TABLES_MASQ_COMMENT='aurora-docker-ipv6-support'
 
 function check_system() {
     source '/etc/os-release'
@@ -376,6 +378,27 @@ function set_ddns_interval() {
     echo -e "${Info} DDNS同步间隔修改成功！" || echo -e "${Error} DDNS同步间隔修改失败！"
 }
 
+function check_ipv6_enabled() {
+    cat ${AURORA_DOCKER_YML} | grep enable_ipv6 | grep true > /dev/null 2>&1 && echo -e "${Info} 已开启 IPV6 支持！"
+}
+
+function check_ip6tables_masq() {
+    [[ -n $(ip6tables -t nat -nxvL | grep "${AURORA_IP6TABLES_MASQ_COMMENT}") ]] && echo -e "${Info} IPV6 MASQ 规则已存在！"
+}
+
+function enable_ipv6() {
+    check_install || exit 1
+    ip6tables -V > /dev/null || (echo -e "${Error} 请先安装 ip6tables！" && exit 1)
+    IPV6_SUBNET=$(sed -n 's/^.*subnet:\s*\(.*\)$/\1/p' ${AURORA_DOCKER_YML})
+    check_ip6tables_masq || (ip6tables -t nat -A POSTROUTING -s ${IPV6_SUBNET} -j MASQUERADE -m comment --comment "${AURORA_IP6TABLES_MASQ_COMMENT}" && \
+        echo -e "${Info} 已添加 IPV6 MASQ 规则！")
+    check_ipv6_enabled && exit 0
+    sed -i "s/enable_ipv6:.*$/enable_ipv6: true/" ${AURORA_DOCKER_YML}
+    stop
+    start
+    check_ipv6_enabled
+}
+
 function welcome_aurora() {
     check_system
     echo -e "${Green_font_prefix}
@@ -400,6 +423,7 @@ function welcome_aurora() {
     14. 修改 面板访问端口（默认 ${AURORA_DEF_PORT}）
     15. 修改 面板流量同步间隔（默认 ${AURORA_DEF_TRAFF_MIN} 分钟）
     16. 修改 DDNS同步间隔（默认 ${AURORA_DEF_DDNS_MIN} 分钟）
+    17. 开启 IPV6 支持（需要本机支持 IPV6）
     ————————————
     0.  退出脚本
     ————————————
@@ -453,6 +477,9 @@ function welcome_aurora() {
             ;;
         16)
             set_ddns_interval
+            ;;
+        17)
+            enable_ipv6
             ;;
         0)
             exit 0
