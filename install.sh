@@ -144,6 +144,7 @@ function read_config() {
     ENABLE_SENTRY=$(match_config ENABLE_SENTRY \'no\')
     TRAFFIC_INTERVAL_SECONDS=$(match_config TRAFFIC_INTERVAL_SECONDS 600)
     DDNS_INTERVAL_SECONDS=$(match_config DDNS_INTERVAL_SECONDS 120)
+    check_ipv6_enabled && ENABLE_IPV6=true || ENABLE_IPV6=false
 }
 
 function set_config() {
@@ -205,6 +206,7 @@ function echo_config() {
     [[ -z $ENABLE_SENTRY ]] || echo -e "${Info} 开启错误跟踪: $ENABLE_SENTRY"
     [[ -z $TRAFFIC_INTERVAL_SECONDS ]] || echo -e "${Info} 流量同步周期: $(sec_to_min $TRAFFIC_INTERVAL_SECONDS) 分钟"
     [[ -z $DDNS_INTERVAL_SECONDS ]] || echo -e "${Info} DDNS同步周期: $(sec_to_min $DDNS_INTERVAL_SECONDS) 分钟"
+    $ENABLE_IPV6 && echo -e "${Info} 已开启 IPV6 支持" || echo -e "${Info} 未开启 IPV6 支持"
 }
 
 function install() {
@@ -239,13 +241,18 @@ function update() {
     set_port ${AURORA_DEF_PORT} $PORT
     echo -e "${Info} 同步新配置文件完成！"
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && \
-    echo -e "${Error} 请先运行极光面板，以保证更新前完成自动备份旧数据库！" && exit 1 || \
-    (echo -e "${Tip} 正在备份旧数据库，如果更新后出现问题，请回退旧版本并恢复旧数据库！" && backup)
-    docker-compose pull && docker-compose down --remove-orphans
+        echo -e "${Error} 请先运行极光面板，以保证更新前完成自动备份旧数据库！" && exit 1 || \
+        (echo -e "${Tip} 正在备份旧数据库，如果更新后出现问题，请回退旧版本并恢复旧数据库！" && backup)
+    docker-compose pull
+    if $ENABLE_IPV6 ; then
+        enable_ipv6
+    else
+        recreate
+    fi
     OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
     docker-compose up -d && \
-    (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
+        (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
 function backup_data_before_uninstall(){
@@ -279,13 +286,18 @@ function start() {
 function stop() {
     check_install || exit 1
     check_run ${Info} && exit 0
-    cd ${AURORA_HOME} && docker-compose down && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
+    cd ${AURORA_HOME} && docker-compose down --remove-orphans && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install || exit 1
     check_run ${Tip} "极光面板未在运行，请直接启动！" && exit 0
     cd ${AURORA_HOME} && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
+}
+
+function recreate() {
+    stop
+    start
 }
 
 function backend_logs() {
@@ -379,7 +391,7 @@ function set_ddns_interval() {
 }
 
 function check_ipv6_enabled() {
-    cat ${AURORA_DOCKER_YML} | grep enable_ipv6 | grep true > /dev/null 2>&1 && echo -e "${Info} 已开启 IPV6 支持！"
+    cat ${AURORA_DOCKER_YML} | grep '    enable_ipv6' | grep true > /dev/null 2>&1
 }
 
 function check_ip6tables_masq() {
@@ -393,9 +405,8 @@ function enable_ipv6() {
     check_ip6tables_masq || (ip6tables -t nat -A POSTROUTING -s ${IPV6_SUBNET} -j MASQUERADE -m comment --comment "${AURORA_IP6TABLES_MASQ_COMMENT}" && \
         echo -e "${Info} 已添加 IPV6 MASQ 规则！")
     sed -i "s/    enable_ipv6:.*$/    enable_ipv6: true/" ${AURORA_DOCKER_YML}
-    stop
-    start
-    check_ipv6_enabled
+    recreate
+    check_ipv6_enabled && echo -e "${Info} 已开启 IPV6 支持！"
     echo -e "${Tip} 重启系统会导致 ip6tables 规则被重置，需要重新添加！"
 }
 
