@@ -8,10 +8,12 @@ services:
       TZ: 'Asia/Shanghai'
       ENABLE_SENTRY: 'yes'
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
+      ASYNC_DATABASE_URL: 'postgresql+asyncpg://aurora:AuroraAdminPanel321@postgres:5432/aurora'
       TRAFFIC_INTERVAL_SECONDS: 600
       DDNS_INTERVAL_SECONDS: 120
     volumes:
-      - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
+      # - $HOME/.ssh/id_rsa:/app/ansible/env/ssh_key
+      # - $HOME/.ssh/id_ed25519:/app/ansible/env/ssh_key
       - app-data:/app/ansible/priv_data_dirs
     depends_on:
       - redis
@@ -27,7 +29,7 @@ services:
       TZ: 'Asia/Shanghai'
       PYTHONPATH: .
       DATABASE_URL: 'postgresql://aurora:AuroraAdminPanel321@postgres:5432/aurora'
-      ENABLE_SENTRY: 'yes'
+      ASYNC_DATABASE_URL: 'postgresql+asyncpg://aurora:AuroraAdminPanel321@postgres:5432/aurora'
       SECREY_KEY: 'AuroraAdminPanel321'
     volumes:
       - app-data:/app/ansible/priv_data_dirs
