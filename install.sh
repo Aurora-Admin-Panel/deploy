@@ -100,7 +100,7 @@ function install_docker() {
 }
 
 function install_docker_compose() {
-    if ! "$DOCKER_COMPOSE_CMD" --version > /dev/null 2>&1; then
+    if ! $DOCKER_COMPOSE_CMD --version > /dev/null 2>&1; then
         curl -fsSL ${DOCKER_COMPOSE_URL} -o /usr/local/bin/docker-compose && \
         chmod +x /usr/local/bin/docker-compose && \
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
@@ -177,7 +177,7 @@ function change_port() {
     read -r -e -p "请输入新端口: " NEW_PORT
     set_port $PORT $NEW_PORT
     read_port
-    [[ $PORT = $NEW_PORT ]] && cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" up -d && \
+    [[ $PORT = $NEW_PORT ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 端口修改成功！" || echo -e "${Error} 端口修改失败！"
 }
 
@@ -216,7 +216,7 @@ function install() {
     [[ ! -d "$HOME"/.ssh ]] && mkdir -p "$HOME"/.ssh
     # avoid docker creating a directory automatically
     [[ ! -f "$HOME"/.ssh/id_rsa ]] && touch "$HOME"/.ssh/id_rsa
-    "$DOCKER_COMPOSE_CMD" up -d && "$DOCKER_COMPOSE_CMD" exec backend python app/initial_data.py && \
+    $DOCKER_COMPOSE_CMD up -d && $DOCKER_COMPOSE_CMD exec backend python app/initial_data.py && \
     (echo -e "${Info} 极光面板安装成功，已启动！" && exit 0) || (echo -e "${Error} 极光面板安装失败！" && exit 1)
 }
 
@@ -236,7 +236,7 @@ function update() {
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && \
         echo -e "${Error} 请先运行极光面板，以保证更新前完成自动备份旧数据库！" && exit 1 || \
         (echo -e "${Tip} 正在备份旧数据库，如果更新后出现问题，请回退旧版本并恢复旧数据库！" && backup)
-    "$DOCKER_COMPOSE_CMD" pull
+    $DOCKER_COMPOSE_CMD pull
     if $ENABLE_IPV6 ; then
         enable_ipv6
     else
@@ -244,7 +244,7 @@ function update() {
     fi
     OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
-    "$DOCKER_COMPOSE_CMD" up -d && \
+    $DOCKER_COMPOSE_CMD up -d && \
         (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
@@ -263,7 +263,7 @@ function uninstall() {
     echo -e "${Tip} 正在备份数据库，如果意外卸载请重新安装面板并恢复数据库！" && backup
     backup_data_before_uninstall
     cd ${AURORA_HOME}
-    [[ -n $(docker ps | grep aurora) ]] && "$DOCKER_COMPOSE_CMD" down
+    [[ -n $(docker ps | grep aurora) ]] && $DOCKER_COMPOSE_CMD down
     OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 镜像清理完成！")
     docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
@@ -273,19 +273,19 @@ function uninstall() {
 function start() {
     check_install || exit 1
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
 }
 
 function stop() {
     check_install || exit 1
     check_run ${Info} && exit 0
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" down --remove-orphans && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD down --remove-orphans && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install || exit 1
     check_run ${Tip} "极光面板未在运行，请直接启动！" && exit 0
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
 
 function recreate() {
@@ -296,25 +296,25 @@ function recreate() {
 function backend_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" logs -f --tail="100" backend worker
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100" backend worker
 }
 
 function frontend_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" logs -f --tail="100" frontend
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100" frontend
 }
 
 function all_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" logs -f --tail="100"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100"
 }
 
 function export_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" logs > logs && \
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs > logs && \
     echo -e "${Info} 日志导出成功：${AURORA_HOME}/logs" || echo -e "${Error} 日志导出失败！"
 }
 
@@ -330,7 +330,7 @@ function backup() {
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
     BACKUP_FILE="data-$(date +%Y%m%d%H%M%S).sql"
     read_db_info
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" exec -T postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD exec -T postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
     echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
 
@@ -343,16 +343,16 @@ function restore() {
     [[ ! -f $BACKUP_FILE ]] && echo -e "${Error} 无法找到数据库文件！" && exit 1
     cd ${AURORA_HOME}
     read_db_info
-    docker stop $("$DOCKER_COMPOSE_CMD" ps | grep aurora | grep -v postgres | awk '{ print $1; }') && \
-    "$DOCKER_COMPOSE_CMD" exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
-    "$DOCKER_COMPOSE_CMD" up -d && \
+    docker stop $($DOCKER_COMPOSE_CMD ps | grep aurora | grep -v postgres | awk '{ print $1; }') && \
+    $DOCKER_COMPOSE_CMD exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
+    $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 数据库还原成功！" || echo -e "${Error} 数据库还原失败！"
 }
 
 function add_superu() {
     check_install || exit 1
     [[ -z $(docker ps | grep aurora | grep backend) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
-    cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" exec backend python app/initial_data.py
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD exec backend python app/initial_data.py
 }
 
 function set_traffic_interval() {
@@ -365,7 +365,7 @@ function set_traffic_interval() {
     [[ -z $NEW_TRAFFIC_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
     sed -i "s/TRAFFIC_INTERVAL_SECONDS:.*$/TRAFFIC_INTERVAL_SECONDS: $NEW_TRAFFIC_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
     read_config
-    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SEC ]] && cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" up -d && \
+    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SEC ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 流量同步间隔修改成功！" || echo -e "${Error} 流量同步间隔修改失败！"
 }
 
@@ -379,7 +379,7 @@ function set_ddns_interval() {
     [[ -z $NEW_DDNS_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
     sed -i "s/DDNS_INTERVAL_SECONDS:.*$/DDNS_INTERVAL_SECONDS: $NEW_DDNS_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
     read_config
-    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SEC ]] && cd ${AURORA_HOME} && "$DOCKER_COMPOSE_CMD" up -d && \
+    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SEC ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} DDNS同步间隔修改成功！" || echo -e "${Error} DDNS同步间隔修改失败！"
 }
 
