@@ -15,10 +15,6 @@ Tip="${Green_font_prefix}[注意]${Font_color_suffix}"
 
 while [[ $# -ge 1 ]]; do
     case $1 in
-        --mirror)
-            FASTGIT="镜像加速"
-            shift
-            ;;
         --dev)
             AURORA_VERSION="DEV"
             shift
@@ -29,36 +25,20 @@ while [[ $# -ge 1 ]]; do
     esac
 done
 
-if curl --version > /dev/null 2>&1; then
-    if [[ -n $(curl -m 5 -s https://api.ip.sb/geoip | grep "China") ]]; then
-        echo -e "${Tip} 根据 ip.sb 提供的信息，当前 IP 可能在中国"
-        read -e -r -p "是否选用 fastgit 镜像完成安装? [Y/n] " input
-        case $input in
-        [yY][eE][sS] | [yY])
-            echo -e "${Tip} 使用 github 镜像加速 ..."
-            FASTGIT="镜像加速"
-            ;;
-        [nN][oO] | [nN])
-            ;;
-        *)
-            ;;
-        esac
-    fi
-fi
-
 INSTALL_VERSION="1.0.0"
 [[ -z "$HOME" ]] && echo -e "${Error} 家目录检查失败！" && exit 1
 AURORA_HOME="$HOME/aurora"
 AURORA_HOME_BACKUP="$HOME/aurora_backup"
 AURORA_DOCKER_YML=${AURORA_HOME}/docker-compose.yml
 AURORA_DOCKER_YML_TEMP=${AURORA_HOME}/docker-compose.yml.tmp
-[[ -z $FASTGIT ]] && GITHUB_RAW_URL="raw.githubusercontent.com" || GITHUB_RAW_URL="raw.fastgit.org"
+GITHUB_RAW_URL="raw.githubusercontent.com"
+GITHUB_URL="github.com"
 AURORA_GITHUB="Aurora-Admin-Panel"
 AURORA_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose.yml"
 AURORA_DEV_YML_URL="https://${GITHUB_RAW_URL}/${AURORA_GITHUB}/deploy/main/docker-compose-dev.yml"
 DOCKER_INSTALL_URL="https://get.docker.com"
-[[ -z $FASTGIT ]] && GITHUB_URL="github.com" || GITHUB_URL="download.fastgit.org"
-DOCKER_COMPOSE_URL="https://${GITHUB_URL}/docker/compose/releases/download/v2.2.3/docker-compose-$(uname -s)-$(uname -m)"
+DOCKER_COMPOSE_CMD='docker compose'
+DOCKER_COMPOSE_URL="https://${GITHUB_URL}/docker/compose/releases/download/v2.29.7/docker-compose-$(uname -s)-$(uname -m)"
 
 AURORA_DEF_IP=""
 AURORA_DEF_PORT=8000
@@ -88,6 +68,17 @@ function check_system() {
     fi
 }
 
+function check_docker_compose() {
+    if docker compose --version > /dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD='docker compose'
+    elif docker-compose --version > /dev/null 2>&1; then
+        DOCKER_COMPOSE_CMD='docker-compose'
+    else
+        # 新安装的 docker 默认自带 compose 插件
+        DOCKER_COMPOSE_CMD='docker compose'
+    fi
+}
+
 function install_software() {
     [[ -z $1 ]] || \
     (type $1 > /dev/null 2>&1 || (echo -e "开始安装依赖 $1 ..." && $INSTALL $1) || ($UPDATE && $INSTALL $1))
@@ -96,7 +87,7 @@ function install_software() {
 function install_docker() {
     if ! docker --version > /dev/null 2>&1; then
         if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
-            curl -fsSL ${DOCKER_INSTALL_URL} | bash -s docker --mirror Aliyun
+            curl -fsSL ${DOCKER_INSTALL_URL} | bash -s docker
             systemctl enable --now docker && \
             while ! systemctl is-active --quiet docker; do sleep 3; done
         elif [[ $OS_FAMILY = "alpine" ]]; then
@@ -109,10 +100,12 @@ function install_docker() {
 }
 
 function install_docker_compose() {
-    if ! docker-compose --version > /dev/null 2>&1; then
+    if ! $DOCKER_COMPOSE_CMD --version > /dev/null 2>&1; then
         curl -fsSL ${DOCKER_COMPOSE_URL} -o /usr/local/bin/docker-compose && \
         chmod +x /usr/local/bin/docker-compose && \
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
+        # update docker compose cmd
+        check_docker_compose
     fi
 }
 
@@ -184,7 +177,7 @@ function change_port() {
     read -r -e -p "请输入新端口: " NEW_PORT
     set_port $PORT $NEW_PORT
     read_port
-    [[ $PORT = $NEW_PORT ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    [[ $PORT = $NEW_PORT ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 端口修改成功！" || echo -e "${Error} 端口修改失败！"
 }
 
@@ -223,7 +216,7 @@ function install() {
     [[ ! -d "$HOME"/.ssh ]] && mkdir -p "$HOME"/.ssh
     # avoid docker creating a directory automatically
     [[ ! -f "$HOME"/.ssh/id_rsa ]] && touch "$HOME"/.ssh/id_rsa
-    docker-compose up -d && docker-compose exec backend python app/initial_data.py && \
+    $DOCKER_COMPOSE_CMD up -d && $DOCKER_COMPOSE_CMD exec backend python app/initial_data.py && \
     (echo -e "${Info} 极光面板安装成功，已启动！" && exit 0) || (echo -e "${Error} 极光面板安装失败！" && exit 1)
 }
 
@@ -243,7 +236,7 @@ function update() {
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && \
         echo -e "${Error} 请先运行极光面板，以保证更新前完成自动备份旧数据库！" && exit 1 || \
         (echo -e "${Tip} 正在备份旧数据库，如果更新后出现问题，请回退旧版本并恢复旧数据库！" && backup)
-    docker-compose pull
+    $DOCKER_COMPOSE_CMD pull
     if $ENABLE_IPV6 ; then
         enable_ipv6
     else
@@ -251,7 +244,7 @@ function update() {
     fi
     OLD_IMG_IDS=$(docker images | grep aurora | grep -v latest | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 旧版镜像清理完成！")
-    docker-compose up -d && \
+    $DOCKER_COMPOSE_CMD up -d && \
         (echo -e "${Info} 极光面板更新成功！" && exit 0) || (echo -e "${Error} 极光面板更新失败！" && exit 1)
 }
 
@@ -270,7 +263,7 @@ function uninstall() {
     echo -e "${Tip} 正在备份数据库，如果意外卸载请重新安装面板并恢复数据库！" && backup
     backup_data_before_uninstall
     cd ${AURORA_HOME}
-    [[ -n $(docker ps | grep aurora) ]] && docker-compose down
+    [[ -n $(docker ps | grep aurora) ]] && $DOCKER_COMPOSE_CMD down
     OLD_IMG_IDS=$(docker images | grep aurora | awk '{ print $3; }')
     [[ -z $OLD_IMG_IDS ]] || (docker image rm $OLD_IMG_IDS && echo -e "${Info} 镜像清理完成！")
     docker volume rm aurora_db-data && docker volume rm aurora_app-data && \
@@ -280,19 +273,19 @@ function uninstall() {
 function start() {
     check_install || exit 1
     [[ -n $(docker ps | grep aurora) ]] && echo -e "${Info} 极光面板正在运行" && exit 0
-    cd ${AURORA_HOME} && docker-compose up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && echo -e "${Info} 启动成功！" || echo -e "${Error} 启动失败！"
 }
 
 function stop() {
     check_install || exit 1
     check_run ${Info} && exit 0
-    cd ${AURORA_HOME} && docker-compose down --remove-orphans && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD down --remove-orphans && echo -e "${Info} 停止成功！" || echo -e "${Error} 停止失败！"
 }
 
 function restart() {
     check_install || exit 1
     check_run ${Tip} "极光面板未在运行，请直接启动！" && exit 0
-    cd ${AURORA_HOME} && docker-compose restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD restart && echo -e "${Info} 重启成功！" || echo -e "${Error} 重启失败！"
 }
 
 function recreate() {
@@ -303,25 +296,25 @@ function recreate() {
 function backend_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && docker-compose logs -f --tail="100" backend worker
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100" backend worker
 }
 
 function frontend_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && docker-compose logs -f --tail="100" frontend
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100" frontend
 }
 
 function all_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && docker-compose logs -f --tail="100"
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs -f --tail="100"
 }
 
 function export_logs() {
     check_install || exit 1
     check_run && exit 1
-    cd ${AURORA_HOME} && docker-compose logs > logs && \
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD logs > logs && \
     echo -e "${Info} 日志导出成功：${AURORA_HOME}/logs" || echo -e "${Error} 日志导出失败！"
 }
 
@@ -337,7 +330,7 @@ function backup() {
     [[ -z $(docker ps | grep aurora | grep postgres) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
     BACKUP_FILE="data-$(date +%Y%m%d%H%M%S).sql"
     read_db_info
-    cd ${AURORA_HOME} && docker-compose exec -T postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD exec -T postgres pg_dump -d $DB_NAME -U $DB_USER -c > $BACKUP_FILE && \
     echo -e "${Info} 数据库备份成功：${AURORA_HOME}/$BACKUP_FILE" || echo -e "${Error} 数据库备份失败！"
 }
 
@@ -350,16 +343,16 @@ function restore() {
     [[ ! -f $BACKUP_FILE ]] && echo -e "${Error} 无法找到数据库文件！" && exit 1
     cd ${AURORA_HOME}
     read_db_info
-    docker stop $(docker-compose ps | grep aurora | grep -v postgres | awk '{ print $1; }') && \
-    docker-compose exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
-    docker-compose up -d && \
+    docker stop $($DOCKER_COMPOSE_CMD ps | grep aurora | grep -v postgres | awk '{ print $1; }') && \
+    $DOCKER_COMPOSE_CMD exec -T postgres psql -d $DB_NAME -U $DB_USER < $BACKUP_FILE > /dev/null && \
+    $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 数据库还原成功！" || echo -e "${Error} 数据库还原失败！"
 }
 
 function add_superu() {
     check_install || exit 1
     [[ -z $(docker ps | grep aurora | grep backend) ]] && echo -e "${Tip} 极光面板未在运行，请先启动！" && exit 1
-    cd ${AURORA_HOME} && docker-compose exec backend python app/initial_data.py
+    cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD exec backend python app/initial_data.py
 }
 
 function set_traffic_interval() {
@@ -372,7 +365,7 @@ function set_traffic_interval() {
     [[ -z $NEW_TRAFFIC_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
     sed -i "s/TRAFFIC_INTERVAL_SECONDS:.*$/TRAFFIC_INTERVAL_SECONDS: $NEW_TRAFFIC_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
     read_config
-    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SEC ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    [[ $TRAFFIC_INTERVAL_SECONDS = $NEW_TRAFFIC_INTERVAL_SEC ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} 流量同步间隔修改成功！" || echo -e "${Error} 流量同步间隔修改失败！"
 }
 
@@ -386,7 +379,7 @@ function set_ddns_interval() {
     [[ -z $NEW_DDNS_INTERVAL_SEC ]] && echo -e "${Error} 请输入整数分钟！" && exit 1 || \
     sed -i "s/DDNS_INTERVAL_SECONDS:.*$/DDNS_INTERVAL_SECONDS: $NEW_DDNS_INTERVAL_SEC/" ${AURORA_DOCKER_YML}
     read_config
-    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SEC ]] && cd ${AURORA_HOME} && docker-compose up -d && \
+    [[ $DDNS_INTERVAL_SECONDS = $NEW_DDNS_INTERVAL_SEC ]] && cd ${AURORA_HOME} && $DOCKER_COMPOSE_CMD up -d && \
     echo -e "${Info} DDNS同步间隔修改成功！" || echo -e "${Error} DDNS同步间隔修改失败！"
 }
 
@@ -412,6 +405,7 @@ function enable_ipv6() {
 
 function welcome_aurora() {
     check_system
+    check_docker_compose
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
