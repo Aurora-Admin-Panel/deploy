@@ -69,7 +69,7 @@ function check_system() {
 }
 
 function check_docker_compose() {
-    if docker compose --version > /dev/null 2>&1; then
+    if docker compose > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker compose'
     elif docker-compose --version > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker-compose'
@@ -85,17 +85,19 @@ function install_software() {
 }
 
 function install_docker() {
-    if ! docker --version > /dev/null 2>&1; then
-        if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
+    if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
+        if ! docker --version > /dev/null 2>&1; then
             curl -fsSL ${DOCKER_INSTALL_URL} | bash -s docker
-            systemctl enable --now docker && \
+        fi
+        systemctl enable --now docker && \
             while ! systemctl is-active --quiet docker; do sleep 3; done
-        elif [[ $OS_FAMILY = "alpine" ]]; then
-            ($INSTALL docker || ($UPDATE && $INSTALL docker)) && \
-            rc-update add docker boot && \
+    elif [[ $OS_FAMILY = "alpine" ]]; then
+        if ! docker --version > /dev/null 2>&1; then
+            ($INSTALL docker || ($UPDATE && $INSTALL docker))
+        fi
+        rc-update add docker boot && \
             service docker start && \
             while [[ -z $(service docker status | grep started) ]]; do sleep 3; done
-        fi
     fi
 }
 
