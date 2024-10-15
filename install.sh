@@ -69,7 +69,7 @@ function check_system() {
 }
 
 function check_docker_compose() {
-    if docker compose --version > /dev/null 2>&1; then
+    if docker compose > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker compose'
     elif docker-compose --version > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker-compose'
