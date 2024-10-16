@@ -411,8 +411,8 @@ function welcome_aurora() {
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
-    1.  安装 极光面板 ${FASTGIT} ${AURORA_VERSION}
-    2.  更新 极光面板 ${FASTGIT} ${AURORA_VERSION}
+    1.  安装 极光面板 ${AURORA_VERSION}
+    2.  更新 极光面板 ${AURORA_VERSION}
     3.  卸载 极光面板
     ————————————
     4.  启动 极光面板
