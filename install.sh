@@ -102,7 +102,7 @@ function install_docker() {
 }
 
 function install_docker_compose() {
-    if ! $DOCKER_COMPOSE_CMD > /dev/null 2>&1; then
+    if ! docker compose > /dev/null 2>&1; then
         curl -fsSL ${DOCKER_COMPOSE_URL} -o /usr/local/bin/docker-compose && \
         chmod +x /usr/local/bin/docker-compose && \
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
