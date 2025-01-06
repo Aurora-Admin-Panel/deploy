@@ -71,7 +71,7 @@ function check_system() {
 function check_docker_compose() {
     if docker compose > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker compose'
-    elif docker-compose --version > /dev/null 2>&1; then
+    elif docker-compose > /dev/null 2>&1; then
         DOCKER_COMPOSE_CMD='docker-compose'
     else
         # 新安装的 docker 默认自带 compose 插件
@@ -86,13 +86,13 @@ function install_software() {
 
 function install_docker() {
     if [[ $OS_FAMILY = "centos" || $OS_FAMILY = "debian" ]]; then
-        if ! docker --version > /dev/null 2>&1; then
+        if ! docker > /dev/null 2>&1; then
             curl -fsSL ${DOCKER_INSTALL_URL} | bash -s docker
         fi
         systemctl enable --now docker && \
             while ! systemctl is-active --quiet docker; do sleep 3; done
     elif [[ $OS_FAMILY = "alpine" ]]; then
-        if ! docker --version > /dev/null 2>&1; then
+        if ! docker > /dev/null 2>&1; then
             ($INSTALL docker || ($UPDATE && $INSTALL docker))
         fi
         rc-update add docker boot && \
@@ -102,7 +102,7 @@ function install_docker() {
 }
 
 function install_docker_compose() {
-    if ! $DOCKER_COMPOSE_CMD --version > /dev/null 2>&1; then
+    if ! docker compose > /dev/null 2>&1; then
         curl -fsSL ${DOCKER_COMPOSE_URL} -o /usr/local/bin/docker-compose && \
         chmod +x /usr/local/bin/docker-compose && \
         ln -sf /usr/local/bin/docker-compose /usr/bin/docker-compose
@@ -411,8 +411,8 @@ function welcome_aurora() {
     echo -e "${Green_font_prefix}
             极光面板 一键脚本
     --------------------------------
-    1.  安装 极光面板 ${FASTGIT} ${AURORA_VERSION}
-    2.  更新 极光面板 ${FASTGIT} ${AURORA_VERSION}
+    1.  安装 极光面板 ${AURORA_VERSION}
+    2.  更新 极光面板 ${AURORA_VERSION}
     3.  卸载 极光面板
     ————————————
     4.  启动 极光面板
