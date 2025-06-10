@@ -429,8 +429,6 @@ function generate_and_replace_security_key() {
        return 1
    fi
    
-   echo -e "${Info} 新安全密钥: ${NEW_SECURITY_KEY}"
-   
    sed -i "s/SECREY_KEY:.*$/SECREY_KEY: '${NEW_SECURITY_KEY}'/" ${AURORA_DOCKER_YML}
    
    if grep -q "SECREY_KEY:.*${NEW_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
