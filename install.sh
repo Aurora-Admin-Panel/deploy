@@ -411,33 +411,51 @@ function generate_secure_key() {
     openssl rand -base64 32 | tr -d '=' | tr '+/' '-_'
 }
 
+function generate_and_replace_security_key() {
+   echo -e "${Info} 正在生成新的安全密钥..."
+   
+   if [[ ! -f ${AURORA_DOCKER_YML} ]]; then
+       echo -e "${Error} docker-compose.yml 文件不存在！"
+       return 1
+   fi
+   
+   cp ${AURORA_DOCKER_YML} ${AURORA_DOCKER_YML_BACKUP}
+   echo -e "${Info} 已创建配置文件备份: ${AURORA_DOCKER_YML_BACKUP}"
+   
+   NEW_SECURITY_KEY=$(generate_secure_key)
+   
+   if [[ -z "${NEW_SECURITY_KEY}" ]]; then
+       echo -e "${Error} 生成安全密钥失败！"
+       return 1
+   fi
+   
+   echo -e "${Info} 新安全密钥: ${NEW_SECURITY_KEY}"
+   
+   sed -i "s/SECREY_KEY:.*$/SECREY_KEY: '${NEW_SECURITY_KEY}'/" ${AURORA_DOCKER_YML}
+   
+   if grep -q "SECREY_KEY:.*${NEW_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
+       echo -e "${Info} 安全密钥更新成功！"
+       echo -e "${Tip} 如需回退，请使用备份文件: ${AURORA_DOCKER_YML_BACKUP}"
+       return 0
+   else
+       echo -e "${Error} 安全密钥更新失败！"
+       cp ${AURORA_DOCKER_YML_BACKUP} ${AURORA_DOCKER_YML}
+       return 1
+   fi
+}
+
 function check_and_update_security() {
-    if [[ ! -f ${AURORA_DOCKER_YML} ]]; then
-        echo -e "${Warning} docker-compose.yml 文件不存在，跳过安全检查"
-        return 0
-    fi
-    
-    if grep -q "SECREY_KEY:.*${DEFAULT_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
-        echo -e "${Warning} 检测到默认安全密钥 '${DEFAULT_SECURITY_KEY}'，这存在安全风险！"
-        echo -e "${Info} 正在生成新的安全密钥..."
-        
-        # Create backup
-        cp ${AURORA_DOCKER_YML} ${AURORA_DOCKER_YML_BACKUP}
-        echo -e "${Info} 已创建配置文件备份: ${AURORA_DOCKER_YML_BACKUP}"
-        
-        # Generate new secure key
-        NEW_SECURITY_KEY=$(generate_secure_key)
-        
-        if [[ -z "${NEW_SECURITY_KEY}" ]]; then
-            echo -e "${Error} 生成安全密钥失败！"
-            return 1
-        fi
-        
-        echo -e "${Info} 新安全密钥: ${NEW_SECURITY_KEY}"
-        
-        sed -i "s/SECREY_KEY:.*$/SECREY_KEY: '${NEW_SECURITY_KEY}'/" ${AURORA_DOCKER_YML}
-        echo -e "${Info} 安全密钥更新成功！"
-    fi
+   if [[ ! -f ${AURORA_DOCKER_YML} ]]; then
+       echo -e "${Warning} docker-compose.yml 文件不存在，跳过安全检查"
+       return 0
+   fi
+   
+   # Check if default security key is present in SECREY_KEY line
+   if grep -q "SECREY_KEY:.*${DEFAULT_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
+       echo -e "${Warning} 检测到默认安全密钥 '${DEFAULT_SECURITY_KEY}'，这存在安全风险！"
+       generate_and_replace_security_key
+       return $?
+   fi
 }
 
 function welcome_aurora() {
@@ -467,6 +485,8 @@ function welcome_aurora() {
     15. 修改 面板流量同步间隔（默认 ${AURORA_DEF_TRAFF_MIN} 分钟）
     16. 修改 DDNS同步间隔（默认 ${AURORA_DEF_DDNS_MIN} 分钟）
     17. 开启 IPV6 支持（需要本机支持 IPV6）
+    ————————————
+    18. 修改安全密钥（默认 ${DEFAULT_SECURITY_KEY}，建议修改）
     ————————————
     0.  退出脚本
     ————————————
@@ -523,6 +543,9 @@ function welcome_aurora() {
             ;;
         17)
             enable_ipv6
+            ;;
+        18)
+            generate_and_replace_security_key
             ;;
         0)
             exit 0
