@@ -484,7 +484,7 @@ function welcome_aurora() {
     16. 修改 DDNS同步间隔（默认 ${AURORA_DEF_DDNS_MIN} 分钟）
     17. 开启 IPV6 支持（需要本机支持 IPV6）
     ————————————
-    18. 修改安全密钥（默认 ${DEFAULT_SECURITY_KEY}，建议修改）
+    18. 修改安全密钥（默认 ${DEFAULT_SECURITY_KEY}十分不安全，建议定期更换）
     ————————————
     0.  退出脚本
     ————————————
