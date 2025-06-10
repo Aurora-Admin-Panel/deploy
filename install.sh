@@ -417,8 +417,7 @@ function check_and_update_security() {
         return 0
     fi
     
-    # Check if default security key is present
-    if grep -q "${DEFAULT_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
+    if grep -q "SECREY_KEY:.*${DEFAULT_SECURITY_KEY}" ${AURORA_DOCKER_YML}; then
         echo -e "${Warning} 检测到默认安全密钥 '${DEFAULT_SECURITY_KEY}'，这存在安全风险！"
         echo -e "${Info} 正在生成新的安全密钥..."
         
